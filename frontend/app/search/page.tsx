@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SearchX } from "lucide-react";
 
+import { API_URL } from "@/lib/api";
+
 import ProductCard from "../../components/ProductCard";
 
 interface Category {
@@ -47,7 +49,7 @@ export default function SearchPage() {
     const load = async () => {
       try {
         const categoriesResponse = await fetch(
-          "http://127.0.0.1:8000/api/categories/",
+          `${API_URL}/api/categories/`,
         );
 
         if (!categoriesResponse.ok) {
@@ -95,8 +97,8 @@ export default function SearchPage() {
 
         const url =
           params.toString().length > 0
-            ? `http://127.0.0.1:8000/api/products/?${params.toString()}`
-            : "http://127.0.0.1:8000/api/products/";
+            ? `${API_URL}/api/products/?${params.toString()}`
+            : `${API_URL}/api/products/`;
 
         const response = await fetch(url);
         if (!response.ok) {

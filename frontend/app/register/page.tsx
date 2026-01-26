@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { API_URL } from "@/lib/api";
+
 import { useAuthStore } from "../../store/authStore";
 
 export default function RegisterPage() {
@@ -30,7 +32,7 @@ export default function RegisterPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch("http://127.0.0.1:8000/api/register/", {
+      const response = await fetch(`${API_URL}/api/register/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,7 +48,7 @@ export default function RegisterPage() {
         throw new Error("Nao foi possivel criar a conta.");
       }
 
-      const loginResponse = await fetch("http://127.0.0.1:8000/api/token/", {
+      const loginResponse = await fetch(`${API_URL}/api/token/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

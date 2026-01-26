@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { API_URL } from "@/lib/api";
+
 import { useAuthStore } from "../../store/authStore";
 
 interface Order {
@@ -88,7 +90,7 @@ export default function ProfilePage() {
       setLoading(true);
       setError("");
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/orders/", {
+        const response = await fetch(`${API_URL}/api/orders/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

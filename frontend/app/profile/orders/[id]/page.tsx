@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+import { API_URL } from "@/lib/api";
+
 import { useAuthStore } from "../../../../store/authStore";
 
 interface OrderItem {
@@ -84,14 +86,11 @@ export default function OrderDetailsPage() {
       setError("");
 
       try {
-        const response = await fetch(
-          `http://127.0.0.1:8000/api/orders/${orderId}/`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await fetch(`${API_URL}/api/orders/${orderId}/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
 
         if (!response.ok) {
           throw new Error("Nao foi possivel carregar o pedido.");

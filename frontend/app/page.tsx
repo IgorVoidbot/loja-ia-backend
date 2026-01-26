@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { API_URL } from "@/lib/api";
+
 import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
@@ -34,8 +36,8 @@ export default function Home() {
     const load = async () => {
       try {
         const [productsResponse, categoriesResponse] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/products/"),
-          fetch("http://127.0.0.1:8000/api/categories/"),
+          fetch(`${API_URL}/api/products/`),
+          fetch(`${API_URL}/api/categories/`),
         ]);
 
         if (!productsResponse.ok || !categoriesResponse.ok) {

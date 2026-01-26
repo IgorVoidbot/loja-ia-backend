@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { API_URL } from "@/lib/api";
+
 import ProductCard from "../../components/ProductCard";
 
 interface Category {
@@ -58,8 +60,8 @@ export default function CollectionPage() {
     const load = async () => {
       try {
         const [productsResponse, categoriesResponse] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/products/"),
-          fetch("http://127.0.0.1:8000/api/categories/"),
+          fetch(`${API_URL}/api/products/`),
+          fetch(`${API_URL}/api/categories/`),
         ]);
 
         if (!productsResponse.ok || !categoriesResponse.ok) {

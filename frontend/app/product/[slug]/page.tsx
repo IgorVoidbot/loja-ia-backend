@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
+import { API_URL } from "@/lib/api";
+
 import { useCartStore } from "../../../store/cartStore";
 
 interface Product {
@@ -28,7 +30,7 @@ export default function ProductDetailsPage() {
 
     const load = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/products/");
+        const response = await fetch(`${API_URL}/api/products/`);
         if (!response.ok) {
           throw new Error("Failed to load product");
         }
