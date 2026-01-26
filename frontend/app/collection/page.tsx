@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-
 import { API_URL } from "@/lib/api";
-
 import ProductCard from "../../components/ProductCard";
 
-export const dynamic = "force-dynamic"; 
+// 1. Força a página a ser dinâmica (pula o erro de build)
+export const dynamic = "force-dynamic";
 
 interface Category {
   id: number;
@@ -42,7 +41,8 @@ const parsePrice = (value: string) => {
   return Number.isFinite(numeric) ? numeric : 0;
 };
 
-export default function CollectionPage() {
+// 2. Criamos um componente interno só para o conteúdo que usa SearchParams
+function CollectionContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -100,6 +100,13 @@ export default function CollectionPage() {
   useEffect(() => {
     const query = searchParams.get("search") || "";
     setSearchTerm(query);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
   }, [searchParams]);
 
   const filteredProducts = useMemo(() => {
@@ -200,58 +207,74 @@ export default function CollectionPage() {
   );
 
   return (
+    <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 pb-20 pt-12 md:flex-row">
+      <div className="md:hidden">
+        <button
+          type="button"
+          onClick={() => setIsFiltersOpen((prev) => !prev)}
+          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white"
+        >
+          {isFiltersOpen ? "Fechar filtros" : "Abrir filtros"}
+        </button>
+        {isFiltersOpen && (
+          <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
+            {FiltersContent}
+          </div>
+        )}
+      </div>
+
+      <aside className="hidden w-64 shrink-0 md:block">
+        <div className="sticky top-24 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6">
+          <h2 className="text-lg font-semibold text-white">Filtros</h2>
+          <div className="mt-6">{FiltersContent}</div>
+        </div>
+      </aside>
+
+      <div className="flex-1">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold">Colecao</h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              {filteredProducts.length} produto(s) encontrados
+            </p>
+          </div>
+        </div>
+
+        {loading && <p className="text-zinc-400">Carregando produtos...</p>}
+        {error && <p className="text-red-400">{error}</p>}
+
+        {!loading && !error && filteredProducts.length === 0 && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-center text-zinc-400">
+            Nenhum produto encontrado
+          </div>
+        )}
+
+        {!loading && !error && filteredProducts.length > 0 && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// 3. O Componente Principal agora só envolve o conteúdo em Suspense
+// Isso é OBRIGATÓRIO quando se usa useSearchParams() no build
+export default function CollectionPage() {
+  return (
     <main className="min-h-screen bg-black text-white">
-      <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 pb-20 pt-12 md:flex-row">
-        <div className="md:hidden">
-          <button
-            type="button"
-            onClick={() => setIsFiltersOpen((prev) => !prev)}
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white"
-          >
-            {isFiltersOpen ? "Fechar filtros" : "Abrir filtros"}
-          </button>
-          {isFiltersOpen && (
-            <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
-              {FiltersContent}
-            </div>
-          )}
-        </div>
-
-        <aside className="hidden w-64 shrink-0 md:block">
-          <div className="sticky top-24 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6">
-            <h2 className="text-lg font-semibold text-white">Filtros</h2>
-            <div className="mt-6">{FiltersContent}</div>
+      <Suspense
+        fallback={
+          <div className="flex h-screen items-center justify-center text-zinc-500">
+            Carregando filtros...
           </div>
-        </aside>
-
-        <div className="flex-1">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold">Colecao</h1>
-              <p className="mt-2 text-sm text-zinc-400">
-                {filteredProducts.length} produto(s) encontrados
-              </p>
-            </div>
-          </div>
-
-          {loading && <p className="text-zinc-400">Carregando produtos...</p>}
-          {error && <p className="text-red-400">{error}</p>}
-
-          {!loading && !error && filteredProducts.length === 0 && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-center text-zinc-400">
-              Nenhum produto encontrado
-            </div>
-          )}
-
-          {!loading && !error && filteredProducts.length > 0 && (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+        }
+      >
+        <CollectionContent />
+      </Suspense>
     </main>
   );
 }
