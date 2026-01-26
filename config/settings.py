@@ -129,5 +129,7 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.environ.get("CLOUDINARY_API_SECRET")
 }
 
+WHITENOISE_USE_FINDERS = True
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
