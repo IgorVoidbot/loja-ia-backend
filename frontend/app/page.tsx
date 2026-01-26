@@ -9,6 +9,10 @@ import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
 
+// --- CORREÇÃO IMPORTANTE AQUI ---
+// Isso impede o Next.js de tentar acessar o banco durante o Build (que é o que está dando erro)
+export const dynamic = "force-dynamic"; 
+
 interface Product {
   id: number;
   name: string;

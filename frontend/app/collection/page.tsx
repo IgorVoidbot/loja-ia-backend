@@ -7,6 +7,8 @@ import { API_URL } from "@/lib/api";
 
 import ProductCard from "../../components/ProductCard";
 
+export const dynamic = "force-dynamic"; 
+
 interface Category {
   id: number;
   name: string;
