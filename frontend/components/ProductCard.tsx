@@ -6,7 +6,7 @@ interface ProductCardProps {
     name: string;
     price: string;
     image: string | null;
-    category_name: string;
+    category_name?: string; 
     slug: string;
   };
 }
