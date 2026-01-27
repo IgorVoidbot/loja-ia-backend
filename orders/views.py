@@ -1,4 +1,4 @@
-from django.conf import settings
+﻿from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
@@ -18,28 +18,28 @@ class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.prefetch_related("items").all()
     serializer_class = OrderSerializer
 
-    # --- CORREÇÃO AQUI: getattr para evitar erro 500 ---
+    # --- CORRE��O AQUI: getattr para evitar erro 500 ---
     def get_authenticators(self):
-        # Tenta pegar a ação de forma segura. Se não existir, retorna None.
-        action = getattr(self, 'action', None)
-        
-        # Se for criar pedido ou checkout, retorna lista vazia (sem autenticação)
+        # Tenta pegar a a��o de forma segura. Se n�o existir, retorna None.
+        action = getattr(self, "action", None)
+
+        # Se for criar pedido ou checkout, retorna lista vazia (sem autentica��o)
         if action in ["create", "create_checkout_session"]:
             return []
-        
+
         return super().get_authenticators()
 
     def get_permissions(self):
-        # Se for POST (qualquer criação), libera geral
+        # Se for POST (qualquer cria��o), libera geral
         if self.request.method == "POST":
             return [permissions.AllowAny()]
-        
+
         # Para ver a lista (GET), precisa estar logado
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         user = self.request.user
-        # Se for usuário anônimo (visitante), retorna nada (segurança)
+        # Se for usu�rio an�nimo (visitante), retorna nada (seguran�a)
         if not user or user.is_anonymous:
             return Order.objects.none()
         return Order.objects.filter(user=user)
@@ -50,11 +50,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-    # --- Ação de Checkout do Stripe ---
-    @action(detail=False, methods=['post'], url_path='create-checkout-session')
+    # --- A��o de Checkout do Stripe ---
+    @action(detail=False, methods=["post"], url_path="create-checkout-session")
     def create_checkout_session(self, request):
-        print("--- Iniciando Checkout Session ---") # Debug
-        
+        print("--- Iniciando Checkout Session ---")  # Debug
+
         order_id = request.data.get("order_id")
         if not order_id:
             return Response(
@@ -67,14 +67,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         try:
             order = Order.objects.get(id=order_id)
         except Order.DoesNotExist:
-             return Response(
+            return Response(
                 {"detail": "Order not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         line_items = []
         for item in order.items.all():
-            # Converter preço para centavos (inteiro)
+            # Converter pre�o para centavos (inteiro)
             unit_amount = int(item.price * 100)
             line_items.append(
                 {
@@ -91,7 +91,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             f"{settings.FRONTEND_URL}"
             "/checkout/success?session_id={CHECKOUT_SESSION_ID}"
         )
-        
+
         cancel_url = f"{settings.FRONTEND_URL}/checkout"
 
         try:
@@ -109,12 +109,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
 
         return Response({"url": session.url}, status=status.HTTP_200_OK)
-    
 
-@csrf_exempt 
+
+@csrf_exempt
 def stripe_webhook_view(request):
     payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
     event = None
 
     try:
@@ -126,34 +126,36 @@ def stripe_webhook_view(request):
     except stripe.error.SignatureVerificationError as e:
         return HttpResponse(status=400)
 
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        
-        order_id = session.get('metadata', {}).get('order_id')
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+
+        order_id = session.get("metadata", {}).get("order_id")
 
         if order_id:
             try:
                 order = Order.objects.get(id=order_id)
-                order.status = 'paid' 
+                order.status = "paid"
                 order.save()
-                # Envio de email de confirmação
+                # Envio de email de confirma��o
                 try:
-                    send_mail(
-                        subject=f"Pedido #{order.id} Confirmado! 🚀",
+
+                    sent = send_mail(
+                        subject=f"Pedido #{order.id} Confirmado! ??",
                         message=(
-                            f"Olá {order.full_name}, seu pagamento de R$ "
+                            f"Ol� {order.full_name}, seu pagamento de R$ "
                             f"{order.total_amount} foi confirmado. Seus produtos "
-                            "já estão liberados!"
+                            "j� est�o liberados!"
                         ),
-                        from_email="noreply@loja-ia.com",
+                        from_email=settings.DEFAULT_FROM_EMAIL,  # <- importante
                         recipient_list=[order.email],
-                        fail_silently=True,
+                        fail_silently=False,  # <- importante
                     )
-                    print(f"📧 Email enviado para {order.email}")
+
+                    print(f"[EMAIL] send_mail retornou={sent} to={order.email} order_id={order.id}")
                 except Exception as e:
                     print(f" Erro ao enviar email: {e}")
                 print(f"PEDIDO {order_id} ATUALIZADO PARA PAGO!")
             except Order.DoesNotExist:
-                print(f"Pedido {order_id} não encontrado.")
+                print(f"Pedido {order_id} n�o encontrado.")
 
     return HttpResponse(status=200)
