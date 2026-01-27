@@ -111,25 +111,33 @@ USE_I18N = True
 USE_TZ = True
 
 # --- CONFIGURAÇÃO DE ARQUIVOS (ESTÁTICOS E MÍDIA) ---
-
-# 1. Arquivos Estáticos (CSS, JS, Admin) - Gerenciados pelo WhiteNoise
-STATIC_URL = "static/"
+# Static (Admin/CSS/JS) - WhiteNoise
+STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# 2. Arquivos de Mídia (Fotos de Produtos) - Gerenciados pelo Cloudinary
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-# 3. Credenciais Cloudinary
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get("CLOUDINARY_CLOUD_NAME"),
-    'API_KEY': os.environ.get("CLOUDINARY_API_KEY"),
-    'API_SECRET': os.environ.get("CLOUDINARY_API_SECRET")
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
 }
 
+STORAGES = {
+    "default": {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+MEDIA_URL = "/media/"
+
 WHITENOISE_USE_FINDERS = True
+
+# Diagnóstico (remova depois que funcionar)
+print("CLOUDINARY ENV OK?",
+      bool(os.environ.get("CLOUDINARY_CLOUD_NAME")),
+      bool(os.environ.get("CLOUDINARY_API_KEY")),
+      bool(os.environ.get("CLOUDINARY_API_SECRET")))
+
+if not DEBUG and not all(CLOUDINARY_STORAGE.values()):
+    raise RuntimeError("Cloudinary env vars faltando no Render.")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
