@@ -139,4 +139,4 @@ if not DEBUG and not all(CLOUDINARY_STORAGE.values()):
     raise RuntimeError("Cloudinary env vars faltando no Render.")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")]

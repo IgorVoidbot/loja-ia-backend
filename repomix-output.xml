@@ -1,0 +1,3853 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+catalog/__init__.py
+catalog/admin.py
+catalog/ai_services.py
+catalog/apps.py
+catalog/migrations/__init__.py
+catalog/migrations/0001_initial.py
+catalog/migrations/0002_alter_product_category_alter_product_slug.py
+catalog/migrations/0003_alter_product_description.py
+catalog/models.py
+catalog/serializers.py
+catalog/tests.py
+catalog/urls.py
+catalog/views.py
+config/__init__.py
+config/asgi.py
+config/settings.py
+config/urls.py
+config/wsgi.py
+core/__init__.py
+core/admin.py
+core/apps.py
+core/managers.py
+core/migrations/__init__.py
+core/migrations/0001_initial.py
+core/models.py
+core/tests.py
+core/urls.py
+core/views.py
+frontend/.gitignore
+frontend/app/checkout/page.tsx
+frontend/app/checkout/success/page.tsx
+frontend/app/collection/page.tsx
+frontend/app/favicon.ico
+frontend/app/globals.css
+frontend/app/layout.tsx
+frontend/app/login/page.tsx
+frontend/app/page.tsx
+frontend/app/product/[slug]/page.tsx
+frontend/app/profile/orders/[id]/page.tsx
+frontend/app/profile/page.tsx
+frontend/app/register/page.tsx
+frontend/app/search/page.tsx
+frontend/components/CartSidebar.tsx
+frontend/components/Footer.tsx
+frontend/components/Hero.tsx
+frontend/components/Navbar.tsx
+frontend/components/ProductCard.tsx
+frontend/eslint.config.mjs
+frontend/lib/api.ts
+frontend/next.config.ts
+frontend/package.json
+frontend/postcss.config.mjs
+frontend/public/file.svg
+frontend/public/globe.svg
+frontend/public/next.svg
+frontend/public/vercel.svg
+frontend/public/window.svg
+frontend/README.md
+frontend/store/authStore.ts
+frontend/store/cartStore.ts
+frontend/tsconfig.json
+manage.py
+media/products/CamisaCorinthians.png
+orders/__init__.py
+orders/admin.py
+orders/apps.py
+orders/migrations/__init__.py
+orders/migrations/0001_initial.py
+orders/migrations/0002_order_user.py
+orders/models.py
+orders/serializers.py
+orders/tests.py
+orders/urls.py
+orders/views.py
+Procfile
+products/cueca.png
+requirements.txt
+runtime.txt
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+__pycache__/
+*.py[cod]
+*$py.class
+
+venv/
+env/
+.env
+
+db.sqlite3
+
+.DS_Store
+Thumbs.db
+
+staticfiles/
+
+.vscode/
+</file>
+
+<file path="catalog/__init__.py">
+
+</file>
+
+<file path="catalog/admin.py">
+from django.contrib import admin
+
+from catalog.ai_services import generate_product_description
+from catalog.models import Category, Product
+
+
+def make_description_with_ai(modeladmin, request, queryset):
+    for product in queryset:
+        description = generate_product_description(product.name)
+        if description:
+            product.description = description
+            product.save(update_fields=["description"])
+
+
+make_description_with_ai.short_description = "Gerar descricao curta com IA"
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    prepopulated_fields = {"slug": ("name",)}
+    actions = [make_description_with_ai]
+</file>
+
+<file path="catalog/ai_services.py">
+import os
+
+import openai
+from django.conf import settings
+
+
+def generate_product_description(product_name):
+    prompt = (
+        "Escreva uma descricao de vendas persuasiva e curta para o produto: "
+        f"{product_name}"
+    )
+    try:
+        api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return ""
+        client = openai.OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        return ""
+</file>
+
+<file path="catalog/apps.py">
+from django.apps import AppConfig
+
+
+class CatalogConfig(AppConfig):
+    name = 'catalog'
+</file>
+
+<file path="catalog/migrations/__init__.py">
+
+</file>
+
+<file path="catalog/migrations/0001_initial.py">
+# Generated by Django 6.0.1 on 2026-01-26 16:37
+
+import django.db.models.deletion
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='Category',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=255)),
+                ('slug', models.SlugField(unique=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Product',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=255)),
+                ('slug', models.SlugField(unique=True)),
+                ('description', models.TextField()),
+                ('price', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('is_active', models.BooleanField(default=True)),
+                ('image', models.ImageField(blank=True, upload_to='products/')),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='products', to='catalog.category')),
+            ],
+        ),
+    ]
+</file>
+
+<file path="catalog/migrations/0002_alter_product_category_alter_product_slug.py">
+# Generated by Django 6.0.1 on 2026-01-26 16:54
+
+import django.db.models.deletion
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('catalog', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.AlterField(
+            model_name='product',
+            name='category',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='products', to='catalog.category'),
+        ),
+        migrations.AlterField(
+            model_name='product',
+            name='slug',
+            field=models.SlugField(blank=True, null=True, unique=True),
+        ),
+    ]
+</file>
+
+<file path="catalog/migrations/0003_alter_product_description.py">
+# Generated by Django 6.0.1 on 2026-01-26 16:56
+
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('catalog', '0002_alter_product_category_alter_product_slug'),
+    ]
+
+    operations = [
+        migrations.AlterField(
+            model_name='product',
+            name='description',
+            field=models.TextField(blank=True, null=True),
+        ),
+    ]
+</file>
+
+<file path="catalog/models.py">
+from django.db import models
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Product(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="products", blank=True, null=True)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    image = models.ImageField(upload_to="products/", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+</file>
+
+<file path="catalog/serializers.py">
+from rest_framework import serializers
+
+from catalog.models import Category, Product
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name", "slug"]
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = [
+            "id",
+            "category",
+            "name",
+            "slug",
+            "description",
+            "price",
+            "is_active",
+            "image",
+            "created_at",
+        ]
+        depth = 1
+</file>
+
+<file path="catalog/tests.py">
+from django.test import TestCase
+
+# Create your tests here.
+</file>
+
+<file path="catalog/urls.py">
+from rest_framework.routers import DefaultRouter
+
+from catalog.views import CategoryViewSet, ProductViewSet
+
+router = DefaultRouter()
+router.register("categories", CategoryViewSet)
+router.register("products", ProductViewSet)
+
+urlpatterns = router.urls
+</file>
+
+<file path="catalog/views.py">
+from django.db import models
+from rest_framework import permissions, viewsets
+
+from catalog.models import Category, Product
+from catalog.serializers import CategorySerializer, ProductSerializer
+
+
+class ReadOnlyOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.method in permissions.SAFE_METHODS or (
+            request.user and request.user.is_staff
+        )
+
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [ReadOnlyOrAdmin]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search = self.request.query_params.get("search")
+        category_slug = self.request.query_params.get("category")
+
+        if search:
+            queryset = queryset.filter(
+                models.Q(name__icontains=search)
+                | models.Q(description__icontains=search)
+            )
+
+        if category_slug:
+            queryset = queryset.filter(category__slug=category_slug)
+
+        return queryset
+</file>
+
+<file path="config/__init__.py">
+
+</file>
+
+<file path="config/asgi.py">
+"""
+ASGI config for config project.
+
+It exposes the ASGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
+"""
+
+import os
+
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+application = get_asgi_application()
+</file>
+
+<file path="config/urls.py">
+"""
+URL configuration for config project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/6.0/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include('catalog.urls')),
+    path('api/', include('orders.urls')),
+    path('api/', include('core.urls')),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+</file>
+
+<file path="config/wsgi.py">
+"""
+WSGI config for config project.
+
+It exposes the WSGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/
+"""
+
+import os
+
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+application = get_wsgi_application()
+</file>
+
+<file path="core/__init__.py">
+
+</file>
+
+<file path="core/admin.py">
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+
+from .models import User
+
+
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    model = User
+    list_display = ("email", "is_staff", "is_active")
+    list_filter = ("is_staff", "is_superuser", "is_active", "groups")
+    ordering = ("email",)
+    search_fields = ("email", "first_name", "last_name")
+
+    fieldsets = (
+        (None, {"fields": ("email", "password")}),
+        ("Personal info", {"fields": ("first_name", "last_name")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "password1", "password2", "is_staff", "is_superuser"),
+            },
+        ),
+    )
+</file>
+
+<file path="core/apps.py">
+from django.apps import AppConfig
+
+
+class CoreConfig(AppConfig):
+    name = 'core'
+</file>
+
+<file path="core/managers.py">
+from django.contrib.auth.base_user import BaseUserManager
+
+
+class UserManager(BaseUserManager):
+    use_in_migrations = True
+
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError("The Email field must be set")
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self.create_user(email, password, **extra_fields)
+</file>
+
+<file path="core/migrations/__init__.py">
+
+</file>
+
+<file path="core/migrations/0001_initial.py">
+# Generated by Django 6.0.1 on 2026-01-26 16:29
+
+import core.managers
+import django.utils.timezone
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        ('auth', '0012_alter_user_first_name_max_length'),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='User',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('password', models.CharField(max_length=128, verbose_name='password')),
+                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
+                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
+                ('first_name', models.CharField(blank=True, max_length=150, verbose_name='first name')),
+                ('last_name', models.CharField(blank=True, max_length=150, verbose_name='last name')),
+                ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
+                ('is_active', models.BooleanField(default=True, help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', verbose_name='active')),
+                ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
+                ('email', models.EmailField(max_length=254, unique=True)),
+                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
+                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+            ],
+            options={
+                'verbose_name': 'user',
+                'verbose_name_plural': 'users',
+                'abstract': False,
+            },
+            managers=[
+                ('objects', core.managers.UserManager()),
+            ],
+        ),
+    ]
+</file>
+
+<file path="core/models.py">
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+from .managers import UserManager
+
+
+class User(AbstractUser):
+    username = None
+    email = models.EmailField(unique=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
+    objects = UserManager()
+</file>
+
+<file path="core/tests.py">
+from django.test import TestCase
+
+# Create your tests here.
+</file>
+
+<file path="core/urls.py">
+from django.urls import path
+
+from core.views import RegisterView
+
+urlpatterns = [
+    path("register/", RegisterView.as_view(), name="register"),
+]
+</file>
+
+<file path="core/views.py">
+from rest_framework import permissions, serializers, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from core.models import User
+
+
+class RegisterSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=6)
+    full_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+class RegisterView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
+        full_name = serializer.validated_data.get("full_name", "")
+
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {"detail": "Email already registered."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.create_user(email=email, password=password)
+        if full_name:
+            user.first_name = full_name
+            user.save(update_fields=["first_name"])
+
+        return Response({"detail": "User created."}, status=status.HTTP_201_CREATED)
+</file>
+
+<file path="frontend/.gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="frontend/app/checkout/success/page.tsx">
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { CheckCircle } from "lucide-react";
+
+export default function CheckoutSuccessPage() {
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <div className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 text-center">
+        <motion.div
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="mb-6 rounded-full border border-emerald-400/30 bg-emerald-500/10 p-6"
+        >
+          <CheckCircle className="h-16 w-16 text-emerald-400" />
+        </motion.div>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          className="text-3xl font-semibold md:text-4xl"
+        >
+          Pedido Confirmado!
+        </motion.h1>
+        <p className="mt-3 text-sm text-zinc-400">
+          Your payment was successful and your order is on the way.
+        </p>
+
+        <Link
+          href="/"
+          className="mt-10 rounded-full border border-zinc-700 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/70"
+        >
+          Voltar para a Loja
+        </Link>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/globals.css">
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+</file>
+
+<file path="frontend/app/layout.tsx">
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import CartSidebar from "../components/CartSidebar";
+import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-black text-white antialiased`}
+      >
+        <Navbar />
+        <main className="pt-24">{children}</main>
+        <Footer />
+        <CartSidebar />
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="frontend/components/CartSidebar.tsx">
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+
+import { useCartStore } from "../store/cartStore";
+
+const parsePrice = (value: string) => {
+  const cleaned = String(value).replace(/[^0-9.,-]/g, "");
+  const normalized =
+    cleaned.includes(",") && cleaned.includes(".")
+      ? cleaned.replace(/\./g, "").replace(",", ".")
+      : cleaned.replace(",", ".");
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+export default function CartSidebar() {
+  const { items, isOpen, addItem, removeItem, toggleCart } = useCartStore();
+
+  const total = items.reduce(
+    (sum, item) => sum + parsePrice(item.product.price) * item.quantity,
+    0,
+  );
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.aside
+          key="cart-sidebar"
+          initial={{ x: "100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "100%" }}
+          transition={{ type: "tween", duration: 0.35 }}
+          className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-zinc-800 bg-zinc-900"
+        >
+          <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
+            <h2 className="text-lg font-semibold text-white">Shopping Cart</h2>
+            <button
+              type="button"
+              onClick={toggleCart}
+              className="text-sm font-semibold text-zinc-400 transition hover:text-white"
+              aria-label="Close cart"
+            >
+              X
+            </button>
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+            {items.length === 0 && (
+              <p className="text-sm text-zinc-400">Your cart is empty.</p>
+            )}
+
+            {items.map((item) => (
+              <div
+                key={item.product.id}
+                className="flex items-center gap-4 border-b border-zinc-800 pb-4"
+              >
+                <div className="h-16 w-16 overflow-hidden rounded-xl bg-zinc-800">
+                  {item.product.image ? (
+                    <img
+                      src={item.product.image}
+                      alt={item.product.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
+                      No image
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-white">
+                    {item.product.name}
+                  </p>
+                  <p className="text-xs text-zinc-400">{item.product.price}</p>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.product.id)}
+                      className="h-7 w-7 rounded-full border border-zinc-700 text-sm text-white transition hover:border-white/70"
+                    >
+                      -
+                    </button>
+                    <span className="min-w-[24px] text-center text-sm text-white">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => addItem(item.product)}
+                      className="h-7 w-7 rounded-full border border-zinc-700 text-sm text-white transition hover:border-white/70"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-zinc-800 px-6 py-5">
+            <div className="mb-4 flex items-center justify-between text-sm text-zinc-300">
+              <span>Total</span>
+              <span className="text-base font-semibold text-white">
+                {total.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </span>
+            </div>
+            <Link
+              href="/checkout"
+              onClick={toggleCart}
+              className="w-full rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-purple-500 px-6 py-3 text-center text-sm font-semibold text-white shadow-[0_20px_40px_-18px_rgba(236,72,153,0.9)] transition hover:scale-[1.01]"
+            >
+              Finalizar Compra
+            </Link>
+          </div>
+        </motion.aside>
+      )}
+    </AnimatePresence>
+  );
+}
+</file>
+
+<file path="frontend/components/Footer.tsx">
+"use client";
+
+import { Instagram, MessageCircle } from "lucide-react";
+
+export default function Footer() {
+  return (
+    <footer className="border-t border-zinc-800 bg-zinc-950 text-white">
+      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 md:grid-cols-4">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-400">
+            Sobre a Loja
+          </h3>
+          <p className="mt-4 text-sm leading-relaxed text-zinc-300">
+            Curadoria premium, entregas rapidas e produtos selecionados para
+            elevar seu estilo com confianca.
+          </p>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-400">
+            Ajuda
+          </h3>
+          <ul className="mt-4 space-y-2 text-sm text-zinc-300">
+            <li>
+              <a href="#" className="transition hover:text-white">
+                Central de suporte
+              </a>
+            </li>
+            <li>
+              <a href="#" className="transition hover:text-white">
+                Trocas e devolucoes
+              </a>
+            </li>
+            <li>
+              <a href="#" className="transition hover:text-white">
+                Rastreamento
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-400">
+            Legal
+          </h3>
+          <ul className="mt-4 space-y-2 text-sm text-zinc-300">
+            <li>
+              <a href="#" className="transition hover:text-white">
+                Politica de privacidade
+              </a>
+            </li>
+            <li>
+              <a href="#" className="transition hover:text-white">
+                Termos de uso
+              </a>
+            </li>
+            <li>
+              <a href="#" className="transition hover:text-white">
+                Cookies
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-400">
+            Redes Sociais
+          </h3>
+          <div className="mt-4 space-y-3 text-sm text-zinc-300">
+            <a
+              href="#"
+              className="flex items-center gap-3 transition hover:text-white"
+            >
+              <Instagram className="h-4 w-4" />
+              Instagram
+            </a>
+            <a
+              href="#"
+              className="flex items-center gap-3 transition hover:text-white"
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+</file>
+
+<file path="frontend/components/Hero.tsx">
+"use client";
+
+import { motion } from "framer-motion";
+import Link from "next/link";
+
+export default function Hero() {
+  return (
+    <section className="flex h-[80vh] items-center bg-gradient-to-br from-gray-900 to-black">
+      <div className="mx-auto w-full max-w-6xl px-6">
+        <motion.h1
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="max-w-3xl text-5xl font-extrabold tracking-tight text-white sm:text-6xl"
+        >
+          REDEFINA SEU ESTILO
+        </motion.h1>
+        <motion.div whileHover={{ scale: 1.05 }} className="mt-8 inline-flex">
+          <Link
+            href="/search"
+            className="inline-flex items-center rounded-full bg-white px-8 py-3 text-sm font-semibold uppercase tracking-widest text-black"
+          >
+            Ver Colecao
+          </Link>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+</file>
+
+<file path="frontend/components/Navbar.tsx">
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Home, Search, ShoppingBag, User, X } from "lucide-react";
+
+import { useCartStore } from "../store/cartStore";
+import { useAuthStore } from "../store/authStore";
+
+export default function Navbar() {
+  const router = useRouter();
+  const { items, toggleCart } = useCartStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  return (
+    <header className="fixed top-0 left-0 right-0 h-20 z-[100] border-b border-white/10 bg-zinc-950/90 text-white backdrop-blur-md transition-all duration-300">
+      <div>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link
+            href="/"
+            className="cursor-pointer text-white transition-colors hover:text-gray-300"
+            onClick={() => setIsSearchOpen(false)}
+          >
+            <span className="text-2xl font-extrabold tracking-tight">
+              LOJA.IA
+            </span>
+          </Link>
+          <div className="flex items-center gap-5 text-white/80">
+            {isSearchOpen ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={searchValue}
+                  onChange={(event) => setSearchValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setIsSearchOpen(false);
+                      setSearchValue("");
+                      return;
+                    }
+                    if (event.key === "Enter") {
+                      const term = searchValue.trim();
+                      if (term) {
+                        router.push(`/search?q=${encodeURIComponent(term)}`);
+                      } else {
+                        router.push("/search");
+                      }
+                      setIsSearchOpen(false);
+                    }
+                  }}
+                  placeholder="Buscar..."
+                  className="w-64 rounded-full border border-white/10 bg-black/40 px-4 py-2 text-sm text-white outline-none transition focus:border-fuchsia-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setSearchValue("");
+                  }}
+                  className="p-4 text-gray-400 transition hover:text-white"
+                  aria-label="Close search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/"
+                  className="transition hover:text-gray-300"
+                  aria-label="Home"
+                >
+                  <Home className="h-6 w-6" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsSearchOpen(true)}
+                  className="transition hover:text-gray-300"
+                  aria-label="Open search"
+                >
+                  <Search className="h-6 w-6" />
+                </button>
+                {isHydrated ? (
+                  isAuthenticated ? (
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => router.push("/profile")}
+                        className="relative flex h-8 w-8 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-500/10 text-xs font-semibold text-emerald-200 transition hover:border-emerald-300"
+                        aria-label="Open profile"
+                      >
+                        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400" />
+                        {user?.name?.[0] || user?.email?.[0] || "U"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={logout}
+                        className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400 transition hover:text-white"
+                      >
+                        Sair
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => router.push("/login")}
+                      className="flex items-center gap-2 text-sm font-semibold text-zinc-300 transition hover:text-white"
+                    >
+                      <User className="h-5 w-5" />
+                      Entrar
+                    </button>
+                  )
+                ) : (
+                  <div className="h-8 w-20 animate-pulse rounded-full bg-white/5" />
+                )}
+                <button
+                  type="button"
+                  onClick={toggleCart}
+                  className="relative transition hover:text-white"
+                  aria-label="Open cart"
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  {items.length > 0 && (
+                    <span className="absolute -right-2 -top-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-fuchsia-500 px-1 text-[10px] font-semibold text-white">
+                      {items.length}
+                    </span>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+</file>
+
+<file path="frontend/eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="frontend/lib/api.ts">
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+</file>
+
+<file path="frontend/package.json">
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.29.2",
+    "lucide-react": "^0.563.0",
+    "next": "16.1.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.4.0",
+    "zustand": "^5.0.10"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
+<file path="frontend/postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="frontend/public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="frontend/public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="frontend/public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="frontend/public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="frontend/public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="frontend/README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="frontend/store/authStore.ts">
+"use client";
+
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+
+interface AuthUser {
+  name?: string;
+  email?: string;
+}
+
+interface AuthState {
+  token: string | null;
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  login: (token: string, user: AuthUser | null) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+      login: (token, user) => {
+        set({
+          token,
+          user,
+          isAuthenticated: Boolean(token),
+        });
+      },
+      logout: () => {
+        set({ token: null, user: null, isAuthenticated: false });
+      },
+    }),
+    {
+      name: "loja-ia-auth",
+      storage: createJSONStorage(() => localStorage),
+    },
+  ),
+);
+</file>
+
+<file path="frontend/store/cartStore.ts">
+"use client";
+
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+
+export interface CartProduct {
+  id: number;
+  name: string;
+  price: string;
+  image: string | null;
+  description?: string;
+  slug?: string;
+}
+
+export interface CartItem {
+  product: CartProduct;
+  quantity: number;
+}
+
+interface CartState {
+  items: CartItem[];
+  isOpen: boolean;
+  addItem: (product: CartProduct) => void;
+  removeItem: (productId: number) => void;
+  clearCart: () => void;
+  toggleCart: () => void;
+}
+
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isOpen: false,
+      addItem: (product) => {
+        const currentItems = get().items;
+        const existingIndex = currentItems.findIndex(
+          (item) => item.product.id === product.id,
+        );
+
+        if (existingIndex >= 0) {
+          const nextItems = [...currentItems];
+          const existing = nextItems[existingIndex];
+          nextItems[existingIndex] = {
+            ...existing,
+            quantity: existing.quantity + 1,
+          };
+          set({ items: nextItems });
+          return;
+        }
+
+        set({
+          items: [...currentItems, { product, quantity: 1 }],
+        });
+      },
+      removeItem: (productId) => {
+        const currentItems = get().items;
+        const existingIndex = currentItems.findIndex(
+          (item) => item.product.id === productId,
+        );
+
+        if (existingIndex < 0) {
+          return;
+        }
+
+        const existing = currentItems[existingIndex];
+        if (existing.quantity <= 1) {
+          set({
+            items: currentItems.filter((item) => item.product.id !== productId),
+          });
+          return;
+        }
+
+        const nextItems = [...currentItems];
+        nextItems[existingIndex] = {
+          ...existing,
+          quantity: existing.quantity - 1,
+        };
+        set({ items: nextItems });
+      },
+      clearCart: () => {
+        set({ items: [] });
+      },
+      toggleCart: () => {
+        set({ isOpen: !get().isOpen });
+      },
+    }),
+    {
+      name: "loja-ia-cart",
+      storage: createJSONStorage(() => localStorage),
+    },
+  ),
+);
+</file>
+
+<file path="frontend/tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
+<file path="manage.py">
+#!/usr/bin/env python
+"""Django's command-line utility for administrative tasks."""
+import os
+import sys
+
+
+def main():
+    """Run administrative tasks."""
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    try:
+        from django.core.management import execute_from_command_line
+    except ImportError as exc:
+        raise ImportError(
+            "Couldn't import Django. Are you sure it's installed and "
+            "available on your PYTHONPATH environment variable? Did you "
+            "forget to activate a virtual environment?"
+        ) from exc
+    execute_from_command_line(sys.argv)
+
+
+if __name__ == '__main__':
+    main()
+</file>
+
+<file path="orders/__init__.py">
+
+</file>
+
+<file path="orders/admin.py">
+from django.contrib import admin
+
+from orders.models import Order, OrderItem
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ("id", "full_name", "email", "status", "total_amount", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("full_name", "email", "id")
+    inlines = [OrderItemInline]
+    readonly_fields = ("created_at",)
+</file>
+
+<file path="orders/apps.py">
+from django.apps import AppConfig
+
+
+class OrdersConfig(AppConfig):
+    name = 'orders'
+</file>
+
+<file path="orders/migrations/__init__.py">
+
+</file>
+
+<file path="orders/migrations/0001_initial.py">
+# Generated by Django 6.0.1 on 2026-01-26 17:27
+
+import django.db.models.deletion
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        ('catalog', '0003_alter_product_description'),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='Order',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('full_name', models.CharField(max_length=255)),
+                ('email', models.EmailField(max_length=254)),
+                ('address', models.CharField(max_length=500)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('total_amount', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
+                ('status', models.CharField(choices=[('pending', 'Pending')], default='pending', max_length=32)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='OrderItem',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('quantity', models.PositiveIntegerField()),
+                ('price', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='orders.order')),
+                ('product', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='catalog.product')),
+            ],
+        ),
+    ]
+</file>
+
+<file path="orders/migrations/0002_order_user.py">
+# Generated by Django 6.0.1 on 2026-01-26 20:15
+
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('orders', '0001_initial'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name='order',
+            name='user',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL),
+        ),
+    ]
+</file>
+
+<file path="orders/models.py">
+from django.conf import settings
+from django.db import models
+
+from catalog.models import Product
+
+
+class Order(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+    ]
+
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField()
+    address = models.CharField(max_length=500)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(
+        max_length=32, choices=STATUS_CHOICES, default=STATUS_PENDING
+    )
+
+    def __str__(self):
+        return f"Order #{self.id} - {self.full_name}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.product.name} x {self.quantity}"
+
+# Create your models here.
+</file>
+
+<file path="orders/serializers.py">
+from decimal import Decimal
+
+from django.db import transaction
+from rest_framework import serializers
+
+from catalog.models import Product
+from orders.models import Order, OrderItem
+
+
+class OrderItemSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class OrderItemDetailSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(source="product.id", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_image = serializers.ImageField(source="product.image", read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ["product_id", "product_name", "product_image", "quantity", "price"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, write_only=True)
+    items_detail = OrderItemDetailSerializer(source="items", many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "full_name",
+            "email",
+            "address",
+            "created_at",
+            "total_amount",
+            "status",
+            "items",
+            "items_detail",
+        ]
+        read_only_fields = ["id", "created_at", "total_amount", "status"]
+
+    def create(self, validated_data):
+        items_data = validated_data.pop("items", [])
+        product_ids = [item["product_id"] for item in items_data]
+        products = Product.objects.in_bulk(product_ids)
+
+        missing_ids = [pid for pid in product_ids if pid not in products]
+        if missing_ids:
+            raise serializers.ValidationError(
+                {"items": f"Invalid product_id(s): {missing_ids}"}
+            )
+
+        with transaction.atomic():
+            order = Order.objects.create(**validated_data)
+            total = Decimal("0.00")
+
+            for item in items_data:
+                product = products[item["product_id"]]
+                quantity = item["quantity"]
+                line_total = product.price * quantity
+                total += line_total
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    price=product.price,
+                )
+
+            order.total_amount = total
+            order.save(update_fields=["total_amount"])
+
+        return order
+</file>
+
+<file path="orders/tests.py">
+from django.test import TestCase
+
+# Create your tests here.
+</file>
+
+<file path="orders/urls.py">
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from orders.views import OrderViewSet
+
+router = DefaultRouter()
+router.register("orders", OrderViewSet, basename="order")
+
+urlpatterns = [
+    path("", include(router.urls)),
+]
+</file>
+
+<file path="orders/views.py">
+from rest_framework import permissions, viewsets
+
+from orders.models import Order
+from orders.serializers import OrderSerializer
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.prefetch_related("items").all()
+    serializer_class = OrderSerializer
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [permissions.AllowAny()]
+        if self.action in ["list", "retrieve"]:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAdminUser()]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user and user.is_staff:
+            return Order.objects.all()
+        return Order.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save()
+
+# Create your views here.
+</file>
+
+<file path="Procfile">
+web: gunicorn config.wsgi
+</file>
+
+<file path="runtime.txt">
+python-3.10.12
+</file>
+
+<file path="frontend/app/checkout/page.tsx">
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { API_URL } from "@/lib/api";
+
+import { useCartStore } from "../../store/cartStore";
+
+const parsePrice = (value: string) => {
+  const cleaned = String(value).replace(/[^0-9.,-]/g, "");
+  const normalized =
+    cleaned.includes(",") && cleaned.includes(".")
+      ? cleaned.replace(/\./g, "").replace(",", ".")
+      : cleaned.replace(",", ".");
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+export default function CheckoutPage() {
+  const router = useRouter();
+  const { items, clearCart } = useCartStore();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [error, setError] = useState("");
+
+  const total = useMemo(
+    () =>
+      items.reduce(
+        (sum, item) => sum + parsePrice(item.product.price) * item.quantity,
+        0,
+      ),
+    [items],
+  );
+
+  const handleCheckout = async () => {
+    if (isProcessing) {
+      return;
+    }
+
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedAddress = address.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedAddress) {
+      setError("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    if (items.length === 0) {
+      setError("Seu carrinho está vazio.");
+      return;
+    }
+
+    setError("");
+    setIsProcessing(true);
+
+    try {
+      const payload = {
+        full_name: trimmedName,
+        email: trimmedEmail,
+        address: trimmedAddress,
+        items: items.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+        })),
+      };
+
+      const response = await fetch(`${API_URL}/api/orders/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao finalizar o pedido.");
+      }
+
+      clearCart();
+      router.push("/checkout/success");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <section className="mx-auto grid max-w-6xl gap-10 px-6 pb-20 pt-12 md:grid-cols-2">
+        <div>
+          <h1 className="text-3xl font-semibold">Delivery Details</h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Complete the form to finish your purchase.
+          </p>
+
+          <form className="mt-8 space-y-5">
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Name
+              </label>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Email
+              </label>
+              <input
+                type="email"
+                placeholder="you@email.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Address
+              </label>
+              <input
+                type="text"
+                placeholder="Street and number"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+          </form>
+        </div>
+
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/60 p-6">
+          <h2 className="text-xl font-semibold">Order Summary</h2>
+          <div className="mt-6 space-y-4">
+            {items.length === 0 && (
+              <p className="text-sm text-zinc-400">Your cart is empty.</p>
+            )}
+            {items.map((item) => (
+              <div
+                key={item.product.id}
+                className="flex items-center justify-between gap-4 border-b border-zinc-800 pb-4"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    {item.product.name}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    Qty: {item.quantity}
+                  </p>
+                </div>
+                <p className="text-sm text-zinc-300">
+                  {item.product.price}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 space-y-3 border-t border-zinc-800 pt-4 text-sm text-zinc-300">
+            <div className="flex items-center justify-between">
+              <span>Subtotal</span>
+              <span>
+                {total.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-base font-semibold text-white">
+              <span>Total</span>
+              <span>
+                {total.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCheckout}
+            disabled={isProcessing || items.length === 0}
+            className="mt-6 w-full rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_-18px_rgba(236,72,153,0.9)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isProcessing ? "Processing..." : "Pagar Agora"}
+          </button>
+          {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        </div>
+      </section>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/login/page.tsx">
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { API_URL } from "@/lib/api";
+
+import { useAuthStore } from "../../store/authStore";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuthStore();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setError("Preencha email e senha.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetch(`${API_URL}/api/token/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Credenciais invalidas.");
+      }
+
+      const data = await response.json();
+      login(data.access, { email: trimmedEmail });
+
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <div className="mx-auto flex min-h-screen max-w-lg items-center px-6 py-12">
+        <div className="w-full rounded-3xl border border-zinc-800 bg-zinc-950/70 p-8">
+          <h1 className="text-3xl font-semibold">Entrar</h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Acesse sua conta para continuar.
+          </p>
+
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="voce@email.com"
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Senha
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="********"
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_-18px_rgba(236,72,153,0.9)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSubmitting ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-zinc-400">
+            Ainda nao tem conta?{" "}
+            <Link href="/register" className="text-white hover:underline">
+              Criar conta
+            </Link>
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/product/[slug]/page.tsx">
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+
+import { API_URL } from "@/lib/api";
+
+import { useCartStore } from "../../../store/cartStore";
+
+interface Product {
+  id: number;
+  name: string;
+  price: string;
+  image: string | null;
+  description?: string;
+  slug?: string;
+}
+
+export default function ProductDetailsPage() {
+  const params = useParams();
+  const slug = useMemo(() => String(params?.slug ?? ""), [params]);
+  const { addItem, toggleCart } = useCartStore();
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/products/`);
+        if (!response.ok) {
+          throw new Error("Failed to load product");
+        }
+        const data = (await response.json()) as Product[];
+        const found =
+          data.find((item) => item.slug === slug) ??
+          data.find(
+            (item) =>
+              item.name?.toLowerCase().replace(/\s+/g, "-") === slug.toLowerCase(),
+          ) ??
+          null;
+        if (isMounted) {
+          setProduct(found);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Unexpected error");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (slug) {
+      load();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <section className="mx-auto grid max-w-6xl gap-10 px-6 pb-20 pt-12 md:grid-cols-2">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900">
+          {product?.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-full min-h-[360px] w-full object-cover md:min-h-[520px]"
+            />
+          ) : (
+            <div className="flex h-full min-h-[360px] w-full items-center justify-center text-sm text-zinc-400 md:min-h-[520px]">
+              No image
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col justify-center gap-6">
+          {loading && <p className="text-zinc-400">Loading product...</p>}
+          {error && <p className="text-red-400">{error}</p>}
+
+          {!loading && !error && product && (
+            <>
+              <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+                {product.name}
+              </h1>
+              <p className="text-3xl font-semibold text-emerald-300">
+                {product.price}
+              </p>
+              <p className="text-base leading-relaxed text-zinc-300">
+                {product.description ||
+                  "Premium materials, sleek finish, and a refined daily experience."}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  addItem(product);
+                  toggleCart();
+                }}
+                className="w-full rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_-18px_rgba(236,72,153,0.9)] transition hover:scale-[1.01]"
+              >
+                Adicionar ao Carrinho
+              </button>
+            </>
+          )}
+
+          {!loading && !error && !product && (
+            <div className="rounded-2xl border border-white/10 bg-zinc-950/60 p-6">
+              <p className="text-zinc-300">Product not found.</p>
+              <p className="mt-2 text-sm text-zinc-500">
+                Check the URL and try again.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/profile/orders/[id]/page.tsx">
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+
+import { API_URL } from "@/lib/api";
+
+import { useAuthStore } from "../../../../store/authStore";
+
+interface OrderItem {
+  product_id: number;
+  product_name: string;
+  product_image: string | null;
+  quantity: number;
+  price: string;
+}
+
+interface OrderDetail {
+  id: number;
+  created_at: string;
+  status: string;
+  total_amount: string;
+  items_detail: OrderItem[];
+}
+
+const formatDate = (value: string) => {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const statusStyles: Record<string, string> = {
+  pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  paid: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  shipped: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  cancelled: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+};
+
+const formatCurrency = (value: string) => {
+  const numeric = Number(value);
+  const safeValue = Number.isFinite(numeric) ? numeric : 0;
+  return safeValue.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+};
+
+export default function OrderDetailsPage() {
+  const router = useRouter();
+  const params = useParams();
+  const orderId = String(params?.id ?? "");
+  const { token, isAuthenticated } = useAuthStore();
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (!token || !isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadOrder = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch(`${API_URL}/api/orders/${orderId}/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Nao foi possivel carregar o pedido.");
+        }
+
+        const data = await response.json();
+        if (isMounted) {
+          setOrder(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Erro inesperado.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (orderId) {
+      loadOrder();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, isHydrated, orderId, router, token]);
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <section className="mx-auto max-w-5xl px-6 pb-20 pt-12">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-sm font-semibold text-zinc-400 transition hover:text-white"
+        >
+          Voltar
+        </button>
+
+        <div className="mt-6 rounded-3xl border border-zinc-800 bg-zinc-950/70 p-8">
+          {loading && <p className="text-zinc-400">Carregando pedido...</p>}
+          {error && <p className="text-red-400">{error}</p>}
+
+          {!loading && !error && order && (
+            <>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-sm text-zinc-500">
+                    Pedido #{order.id.toString().padStart(3, "0")}
+                  </p>
+                  <h1 className="mt-2 text-2xl font-semibold text-white">
+                    {formatCurrency(order.total_amount)}
+                  </h1>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {formatDate(order.created_at)}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
+                    statusStyles[order.status] ||
+                    "border-zinc-700 text-zinc-300"
+                  }`}
+                >
+                  {order.status}
+                </span>
+              </div>
+
+              <div className="mt-8 space-y-4">
+                {order.items_detail?.map((item) => (
+                  <div
+                    key={item.product_id}
+                    className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-black/40 p-4"
+                  >
+                    <div className="h-16 w-16 overflow-hidden rounded-xl bg-zinc-900">
+                      {item.product_image ? (
+                        <img
+                          src={item.product_image}
+                          alt={item.product_name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
+                          Sem imagem
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-white">
+                        {item.product_name}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Quantidade: {item.quantity}
+                      </p>
+                    </div>
+                    <p className="text-sm text-zinc-300">
+                      {formatCurrency(item.price)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/profile/page.tsx">
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { API_URL } from "@/lib/api";
+
+import { useAuthStore } from "../../store/authStore";
+
+interface Order {
+  id: number;
+  created_at: string;
+  status: string;
+  total_amount: string;
+}
+
+const formatDate = (value: string) => {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const statusStyles: Record<string, string> = {
+  pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  paid: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  shipped: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  cancelled: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+};
+
+const parseTokenEmail = (token: string) => {
+  try {
+    const payload = token.split(".")[1];
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(atob(normalized));
+    return decoded.email || decoded.username || "";
+  } catch {
+    return "";
+  }
+};
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const { token, isAuthenticated, user, logout } = useAuthStore();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [userName, setUserName] = useState("Cliente");
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (!isAuthenticated || !token) {
+      router.push("/login");
+      return;
+    }
+    if (user?.name) {
+      setUserName(user.name);
+      return;
+    }
+    const email = user?.email || parseTokenEmail(token);
+    if (email) {
+      setUserName(email.split("@")[0]);
+    }
+  }, [isAuthenticated, isHydrated, router, token, user]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadOrders = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(`${API_URL}/api/orders/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Nao foi possivel carregar seus pedidos.");
+        }
+
+        const data = await response.json();
+        if (isMounted) {
+          setOrders(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Erro inesperado.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadOrders();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  const hasOrders = useMemo(() => orders.length > 0, [orders]);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <section className="mx-auto max-w-6xl px-6 pb-20 pt-12">
+        <div className="flex flex-col gap-4 rounded-3xl border border-zinc-800 bg-zinc-950/70 p-8 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold">Ola, {userName}</h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              Aqui voce acompanha seus pedidos e atualizacoes.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-full border border-zinc-700 px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition hover:border-white/70 hover:text-white"
+          >
+            Sair
+          </button>
+        </div>
+
+        <div className="mt-10">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Meus pedidos</h2>
+          </div>
+
+          {loading && isAuthenticated && (
+            <p className="text-zinc-400">Carregando pedidos...</p>
+          )}
+          {error && <p className="text-red-400">{error}</p>}
+
+          {!loading && !error && !hasOrders && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-center text-zinc-400">
+              Voce ainda nao fez nenhum pedido.
+            </div>
+          )}
+
+          {!loading && !error && hasOrders && (
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <p className="text-sm text-zinc-500">
+                      Pedido #{order.id.toString().padStart(3, "0")}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-white">
+                      {order.total_amount}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {formatDate(order.created_at)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
+                        statusStyles[order.status] ||
+                        "border-zinc-700 text-zinc-300"
+                      }`}
+                    >
+                      {order.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/profile/orders/${order.id}`)}
+                      className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition hover:border-white/70 hover:text-white"
+                    >
+                      Ver detalhes
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/register/page.tsx">
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { API_URL } from "@/lib/api";
+
+import { useAuthStore } from "../../store/authStore";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const { login } = useAuthStore();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedPassword) {
+      setError("Preencha todos os campos.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetch(`${API_URL}/api/register/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: trimmedName,
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Nao foi possivel criar a conta.");
+      }
+
+      const loginResponse = await fetch(`${API_URL}/api/token/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
+      });
+
+      if (!loginResponse.ok) {
+        throw new Error("Conta criada, mas falhou ao entrar.");
+      }
+
+      const data = await loginResponse.json();
+      login(data.access, { name: trimmedName, email: trimmedEmail });
+
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <div className="mx-auto flex min-h-screen max-w-lg items-center px-6 py-12">
+        <div className="w-full rounded-3xl border border-zinc-800 bg-zinc-950/70 p-8">
+          <h1 className="text-3xl font-semibold">Criar conta</h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Complete seus dados para continuar.
+          </p>
+
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Nome
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Seu nome"
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="voce@email.com"
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Senha
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="********"
+                className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_-18px_rgba(236,72,153,0.9)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSubmitting ? "Criando..." : "Criar conta"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-zinc-400">
+            Ja possui conta?{" "}
+            <Link href="/login" className="text-white hover:underline">
+              Entrar
+            </Link>
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/components/ProductCard.tsx">
+import Link from "next/link";
+
+interface ProductCardProps {
+  product: {
+    id: number;
+    name: string;
+    price: string;
+    image: string | null;
+    category_name?: string; 
+    slug: string;
+  };
+}
+
+export default function ProductCard({ product }: ProductCardProps) {
+  return (
+    <Link href={`/product/${product.slug}`} className="group block h-full">
+      <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+        <div className="aspect-square overflow-hidden bg-zinc-800">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-sm text-zinc-400">
+              Sem imagem
+            </div>
+          )}
+        </div>
+        <div className="space-y-2 p-4">
+          <p className="text-base font-semibold text-white">{product.name}</p>
+          <p className="text-sm font-semibold text-fuchsia-400">
+            {Number(product.price).toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+</file>
+
+<file path="requirements.txt">
+annotated-types==0.7.0
+anyio==4.12.1
+asgiref==3.11.0
+certifi==2026.1.4
+charset-normalizer==3.4.4
+cloudinary==1.44.1
+colorama==0.4.6
+distro==1.9.0
+dj-database-url==3.1.0
+Django==6.0.1
+django-cloudinary-storage==0.3.0
+django-cors-headers==4.9.0
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+gunicorn==24.1.1
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.11
+jiter==0.12.0
+openai==2.15.0
+packaging==26.0
+pillow==12.1.0
+psycopg2-binary==2.9.11
+pydantic==2.12.5
+pydantic_core==2.41.5
+PyJWT==2.10.1
+python-dotenv==1.2.1
+requests==2.32.5
+six==1.17.0
+sniffio==1.3.1
+sqlparse==0.5.5
+tqdm==4.67.1
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+tzdata==2025.3
+urllib3==2.6.3
+whitenoise==6.11.0
+</file>
+
+<file path="frontend/app/page.tsx">
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+import { API_URL } from "@/lib/api";
+
+import Hero from "../components/Hero";
+import Navbar from "../components/Navbar";
+import ProductCard from "../components/ProductCard";
+
+// --- CORREÇÃO IMPORTANTE AQUI ---
+// Isso impede o Next.js de tentar acessar o banco durante o Build (que é o que está dando erro)
+export const dynamic = "force-dynamic"; 
+
+interface Product {
+  id: number;
+  name: string;
+  price: string;
+  image: string | null;
+  category_name: string;
+  slug: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      try {
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          fetch(`${API_URL}/api/products/`),
+          fetch(`${API_URL}/api/categories/`),
+        ]);
+
+        if (!productsResponse.ok || !categoriesResponse.ok) {
+          throw new Error("Falha ao carregar produtos");
+        }
+
+        const [productsData, categoriesData] = await Promise.all([
+          productsResponse.json(),
+          categoriesResponse.json(),
+        ]);
+
+        if (isMounted) {
+          setProducts(productsData);
+          setCategories(categoriesData);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Erro inesperado");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <Navbar />
+      <div className="pt-20">
+        <Hero />
+      </div>
+
+      <section className="mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-16 pt-12">
+        <div>
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Destaques da Semana
+            </h2>
+          </div>
+
+          {loading && <p className="text-zinc-400">Carregando produtos...</p>}
+          {error && <p className="text-red-400">{error}</p>}
+
+          {!loading && !error && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {products.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-3xl font-semibold">Colecao Completa</h3>
+          <p className="mt-3 text-sm text-zinc-400">
+            Explore todas as pecas selecionadas para esta temporada.
+          </p>
+          <Link
+            href="/search"
+            className="mt-6 inline-flex rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-purple-500 px-8 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_-18px_rgba(236,72,153,0.9)] transition hover:scale-[1.01]"
+          >
+            Ver colecao
+          </Link>
+        </div>
+
+        <div>
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Navegue por Categoria
+            </h2>
+          </div>
+
+          {!loading && !error && (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {categories.slice(0, 3).map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/search?category=${category.slug}`}
+                  className="group rounded-3xl border border-zinc-800 bg-zinc-950/60 p-8 transition hover:border-white/40"
+                >
+                  <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">
+                    Categoria
+                  </p>
+                  <h3 className="mt-3 text-2xl font-semibold text-white">
+                    {category.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    Descubra pecas premium e exclusivas.
+                  </p>
+                  <span className="mt-6 inline-flex text-sm font-semibold text-white/80 transition group-hover:text-white">
+                    {"Explorar ->"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/search/page.tsx">
+"use client";
+
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { SearchX } from "lucide-react";
+
+import { API_URL } from "@/lib/api";
+
+import ProductCard from "../../components/ProductCard";
+
+// 1. Força renderização dinâmica (pula conexão com banco no build)
+export const dynamic = "force-dynamic";
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface ProductCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  price: string;
+  image: string | null;
+  slug: string;
+  category?: ProductCategory | null;
+  category_slug?: string;
+  category_name?: string;
+}
+
+// 2. Componente interno que segura a lógica da URL
+function SearchContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const queryParam = searchParams.get("q") || "";
+  const categoryParam = searchParams.get("category") || "all";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      try {
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/`);
+
+        if (!categoriesResponse.ok) {
+          throw new Error("Falha ao carregar categorias");
+        }
+
+        const categoriesData = await categoriesResponse.json();
+
+        if (isMounted) {
+          setCategories(categoriesData);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Erro inesperado");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const params = new URLSearchParams();
+        if (queryParam.trim()) {
+          params.set("search", queryParam.trim());
+        }
+        if (categoryParam !== "all") {
+          params.set("category", categoryParam);
+        }
+
+        const url =
+          params.toString().length > 0
+            ? `${API_URL}/api/products/?${params.toString()}`
+            : `${API_URL}/api/products/`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error("Falha ao carregar produtos");
+        }
+        const data = await response.json();
+        if (isMounted) {
+          setProducts(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Erro inesperado");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [queryParam, categoryParam]);
+
+  const handleCategoryChange = (slug: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (slug === "all") {
+      params.delete("category");
+    } else {
+      params.set("category", slug);
+    }
+
+    if (queryParam) {
+      params.set("q", queryParam);
+    }
+
+    const next = params.toString();
+    router.push(next ? `/search?${next}` : "/search");
+  };
+
+  return (
+    <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 pb-20 pt-12 md:flex-row">
+      <aside className="w-full md:w-64 md:shrink-0">
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6 md:sticky md:top-24">
+          <h2 className="text-lg font-semibold text-white">Filtros</h2>
+
+          <div className="mt-6">
+            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+              Categorias
+            </p>
+            <div className="mt-4 space-y-3">
+              <label className="flex items-center gap-3 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={categoryParam === "all"}
+                  onChange={() => handleCategoryChange("all")}
+                  className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-fuchsia-500"
+                />
+                Todas
+              </label>
+              {categories.map((category) => (
+                <label
+                  key={category.id}
+                  className="flex items-center gap-3 text-sm text-zinc-300"
+                >
+                  <input
+                    type="checkbox"
+                    checked={categoryParam === category.slug}
+                    onChange={() => handleCategoryChange(category.slug)}
+                    className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-fuchsia-500"
+                  />
+                  {category.name}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {(queryParam || categoryParam !== "all") && (
+            <button
+              type="button"
+              onClick={() => router.push("/search")}
+              className="mt-6 w-full rounded-full border border-zinc-800 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition hover:border-white/70 hover:text-white"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      </aside>
+
+      <div className="flex-1">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold">Colecao</h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              {products.length} produto(s) encontrados
+            </p>
+          </div>
+          {(queryParam || categoryParam !== "all") && (
+            <button
+              type="button"
+              onClick={() => router.push("/search")}
+              className="rounded-full border border-zinc-800 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition hover:border-white/70 hover:text-white"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+
+        {loading && <p className="text-zinc-400">Carregando produtos...</p>}
+        {error && <p className="text-red-400">{error}</p>}
+
+        {!loading && !error && products.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-10 text-center text-zinc-400">
+            <SearchX className="h-10 w-10 text-zinc-500" />
+            <p className="text-base font-semibold text-white">
+              Nenhum produto encontrado
+            </p>
+            <p className="text-sm text-zinc-500">
+              Ajuste os filtros ou tente uma nova busca.
+            </p>
+          </div>
+        )}
+
+        {!loading && !error && products.length > 0 && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <Suspense
+        fallback={
+          <div className="flex h-screen items-center justify-center text-zinc-500">
+            Carregando busca...
+          </div>
+        }
+      >
+        <SearchContent />
+      </Suspense>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/app/collection/page.tsx">
+"use client";
+
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { API_URL } from "@/lib/api";
+import ProductCard from "../../components/ProductCard";
+
+// 1. Força a página a ser dinâmica (pula o erro de build)
+export const dynamic = "force-dynamic";
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface ProductCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  price: string;
+  image: string | null;
+  slug: string;
+  category?: ProductCategory | null;
+  category_slug?: string;
+  category_name?: string;
+}
+
+const parsePrice = (value: string) => {
+  const cleaned = String(value).replace(/[^0-9.,-]/g, "");
+  const normalized =
+    cleaned.includes(",") && cleaned.includes(".")
+      ? cleaned.replace(/\./g, "").replace(",", ".")
+      : cleaned.replace(",", ".");
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+// 2. Criamos um componente interno só para o conteúdo que usa SearchParams
+function CollectionContent() {
+  const searchParams = useSearchParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    0,
+    Number.POSITIVE_INFINITY,
+  ]);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      try {
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          fetch(`${API_URL}/api/products/`),
+          fetch(`${API_URL}/api/categories/`),
+        ]);
+
+        if (!productsResponse.ok || !categoriesResponse.ok) {
+          throw new Error("Falha ao carregar catalogo");
+        }
+
+        const [productsData, categoriesData] = await Promise.all([
+          productsResponse.json(),
+          categoriesResponse.json(),
+        ]);
+
+        if (isMounted) {
+          setProducts(productsData);
+          setCategories(categoriesData);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Erro inesperado");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const query = searchParams.get("search") || "";
+    setSearchTerm(query);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [searchParams]);
+
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return products.filter((product) => {
+      const productCategory =
+        product.category?.slug ||
+        product.category_slug ||
+        product.category_name ||
+        "";
+      const matchesCategory =
+        selectedCategory === "all" || productCategory === selectedCategory;
+      const matchesSearch =
+        term.length === 0 || product.name.toLowerCase().includes(term);
+      const price = parsePrice(product.price);
+      const matchesPrice = price >= priceRange[0] && price <= priceRange[1];
+      return matchesCategory && matchesSearch && matchesPrice;
+    });
+  }, [products, searchTerm, selectedCategory, priceRange]);
+
+  const handlePriceChange = (value: string) => {
+    if (value === "0-200") {
+      setPriceRange([0, 200]);
+      return;
+    }
+    if (value === "200-500") {
+      setPriceRange([200, 500]);
+      return;
+    }
+    if (value === "500+") {
+      setPriceRange([500, Number.POSITIVE_INFINITY]);
+      return;
+    }
+    setPriceRange([0, Number.POSITIVE_INFINITY]);
+  };
+
+  const FiltersContent = (
+    <div className="space-y-6">
+      <div>
+        <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+          Search
+        </label>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Busque por nome"
+          className="mt-3 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+        />
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-white">Categorias</p>
+        <div className="mt-3 space-y-2">
+          <button
+            type="button"
+            onClick={() => setSelectedCategory("all")}
+            className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
+              selectedCategory === "all"
+                ? "border-fuchsia-400 text-white"
+                : "border-zinc-800 text-zinc-400 hover:text-white"
+            }`}
+          >
+            Todas
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => setSelectedCategory(category.slug)}
+              className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
+                selectedCategory === category.slug
+                  ? "border-fuchsia-400 text-white"
+                  : "border-zinc-800 text-zinc-400 hover:text-white"
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+          Faixa de preco
+        </label>
+        <select
+          onChange={(event) => handlePriceChange(event.target.value)}
+          className="mt-3 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-fuchsia-500"
+        >
+          <option value="all">Todas</option>
+          <option value="0-200">Ate R$ 200</option>
+          <option value="200-500">R$ 200 - R$ 500</option>
+          <option value="500+">Acima de R$ 500</option>
+        </select>
+      </div>
+    </div>
+  );
+
+  return (
+    <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 pb-20 pt-12 md:flex-row">
+      <div className="md:hidden">
+        <button
+          type="button"
+          onClick={() => setIsFiltersOpen((prev) => !prev)}
+          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white"
+        >
+          {isFiltersOpen ? "Fechar filtros" : "Abrir filtros"}
+        </button>
+        {isFiltersOpen && (
+          <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
+            {FiltersContent}
+          </div>
+        )}
+      </div>
+
+      <aside className="hidden w-64 shrink-0 md:block">
+        <div className="sticky top-24 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6">
+          <h2 className="text-lg font-semibold text-white">Filtros</h2>
+          <div className="mt-6">{FiltersContent}</div>
+        </div>
+      </aside>
+
+      <div className="flex-1">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold">Colecao</h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              {filteredProducts.length} produto(s) encontrados
+            </p>
+          </div>
+        </div>
+
+        {loading && <p className="text-zinc-400">Carregando produtos...</p>}
+        {error && <p className="text-red-400">{error}</p>}
+
+        {!loading && !error && filteredProducts.length === 0 && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-center text-zinc-400">
+            Nenhum produto encontrado
+          </div>
+        )}
+
+        {!loading && !error && filteredProducts.length > 0 && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// 3. O Componente Principal agora só envolve o conteúdo em Suspense
+// Isso é OBRIGATÓRIO quando se usa useSearchParams() no build
+export default function CollectionPage() {
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <Suspense
+        fallback={
+          <div className="flex h-screen items-center justify-center text-zinc-500">
+            Carregando filtros...
+          </div>
+        }
+      >
+        <CollectionContent />
+      </Suspense>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: any = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'loja-ia-backend.onrender.com',
+        pathname: '/media/**',
+      },
+    ],
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+};
+
+export default nextConfig;
+</file>
+
+<file path="config/settings.py">
+import os
+from pathlib import Path
+import dj_database_url
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_PATH = BASE_DIR / ".env"
+
+if ENV_PATH.exists():
+    for line in ENV_PATH.read_text().splitlines():
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key, value.strip().strip('"').strip("'"))
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    "django-insecure-p+bpq#r@$qmvy-1sx%%^w$rg%aqv6k9vw8b_ao6n#w3g9x0a*y",
+)
+
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+
+# CORS Configuration
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
+CORS_ALLOW_HEADERS = [
+    "accept", "accept-encoding", "authorization", "content-type",
+    "dnt", "origin", "user-agent", "x-csrftoken", "x-requested-with",
+]
+
+# Application definition
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'cloudinary',
+    'corsheaders',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'core',
+    'catalog',
+    'orders',
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+ROOT_URLCONF = 'config.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'config.wsgi.application'
+
+# Database
+DATABASES = {
+    "default": dj_database_url.config(
+        default="sqlite:///db.sqlite3",
+        conn_max_age=600,
+    )
+}
+
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+AUTH_USER_MODEL = 'core.User'
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+}
+
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+
+# --- CONFIGURAÇÃO DE ARQUIVOS (ESTÁTICOS E MÍDIA) ---
+# Static (Admin/CSS/JS) - WhiteNoise
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
+}
+
+STORAGES = {
+    "default": {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+MEDIA_URL = "/media/"
+
+WHITENOISE_USE_FINDERS = True
+
+# Diagnóstico (remova depois que funcionar)
+print("CLOUDINARY ENV OK?",
+      bool(os.environ.get("CLOUDINARY_CLOUD_NAME")),
+      bool(os.environ.get("CLOUDINARY_API_KEY")),
+      bool(os.environ.get("CLOUDINARY_API_SECRET")))
+
+if not DEBUG and not all(CLOUDINARY_STORAGE.values()):
+    raise RuntimeError("Cloudinary env vars faltando no Render.")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+</file>
+
+</files>

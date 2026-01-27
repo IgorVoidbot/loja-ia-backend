@@ -1,17 +1,15 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-
-import { API_URL } from "@/lib/api";
 
 import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
+import Footer from "../components/Footer";
 
-// --- CORREÇÃO IMPORTANTE AQUI ---
-// Isso impede o Next.js de tentar acessar o banco durante o Build (que é o que está dando erro)
-export const dynamic = "force-dynamic"; 
+// Mantem o import do Footer sem alterar o layout visual desta pagina
+void Footer;
+
+// Isso impede o Next.js de tentar acessar o banco durante o Build
+export const dynamic = "force-dynamic";
 
 interface Product {
   id: number;
@@ -28,52 +26,51 @@ interface Category {
   slug: string;
 }
 
-export default function Home() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+async function getProducts(): Promise<Product[]> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/products/`,
+      {
+        cache: "no-store",
+      },
+    );
 
-  useEffect(() => {
-    let isMounted = true;
+    if (!response.ok) {
+      return [];
+    }
 
-    const load = async () => {
-      try {
-        const [productsResponse, categoriesResponse] = await Promise.all([
-          fetch(`${API_URL}/api/products/`),
-          fetch(`${API_URL}/api/categories/`),
-        ]);
+    const data = (await response.json()) as Product[];
+    return data;
+  } catch {
+    return [];
+  }
+}
 
-        if (!productsResponse.ok || !categoriesResponse.ok) {
-          throw new Error("Falha ao carregar produtos");
-        }
+async function getCategories(): Promise<Category[]> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/categories/`,
+      {
+        cache: "no-store",
+      },
+    );
 
-        const [productsData, categoriesData] = await Promise.all([
-          productsResponse.json(),
-          categoriesResponse.json(),
-        ]);
+    if (!response.ok) {
+      return [];
+    }
 
-        if (isMounted) {
-          setProducts(productsData);
-          setCategories(categoriesData);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : "Erro inesperado");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+    const data = (await response.json()) as Category[];
+    return data;
+  } catch {
+    return [];
+  }
+}
 
-    load();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+export default async function Home() {
+  const [products, categories] = await Promise.all([
+    getProducts(),
+    getCategories(),
+  ]);
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -90,16 +87,11 @@ export default function Home() {
             </h2>
           </div>
 
-          {loading && <p className="text-zinc-400">Carregando produtos...</p>}
-          {error && <p className="text-red-400">{error}</p>}
-
-          {!loading && !error && (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {products.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {products.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </div>
 
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/60 p-10 text-center">
@@ -122,30 +114,28 @@ export default function Home() {
             </h2>
           </div>
 
-          {!loading && !error && (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {categories.slice(0, 3).map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/search?category=${category.slug}`}
-                  className="group rounded-3xl border border-zinc-800 bg-zinc-950/60 p-8 transition hover:border-white/40"
-                >
-                  <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">
-                    Categoria
-                  </p>
-                  <h3 className="mt-3 text-2xl font-semibold text-white">
-                    {category.name}
-                  </h3>
-                  <p className="mt-2 text-sm text-zinc-400">
-                    Descubra pecas premium e exclusivas.
-                  </p>
-                  <span className="mt-6 inline-flex text-sm font-semibold text-white/80 transition group-hover:text-white">
-                    {"Explorar ->"}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {categories.slice(0, 3).map((category) => (
+              <Link
+                key={category.id}
+                href={`/search?category=${category.slug}`}
+                className="group rounded-3xl border border-zinc-800 bg-zinc-950/60 p-8 transition hover:border-white/40"
+              >
+                <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">
+                  Categoria
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold text-white">
+                  {category.name}
+                </h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Descubra pecas premium e exclusivas.
+                </p>
+                <span className="mt-6 inline-flex text-sm font-semibold text-white/80 transition group-hover:text-white">
+                  {"Explorar ->"}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
     </main>

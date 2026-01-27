@@ -5,19 +5,45 @@ from django.conf import settings
 
 
 def generate_product_description(product_name):
-    prompt = (
-        "Escreva uma descricao de vendas persuasiva e curta para o produto: "
-        f"{product_name}"
+    fallback = (
+        "Descricao confidencial nao disponivel no momento. "
+        "Contate o suporte da Loja IA."
     )
+
+    system_prompt = (
+        "Voce e um Copywriter Especialista em E-commerce Tech/Cyberpunk. "
+        "Seu tom e futurista, persuasivo e conciso."
+    )
+
+    user_prompt = (
+        "Crie uma descricao de produto para e-commerce a partir do nome abaixo. "
+        "Siga exatamente esta estrutura, sem rotulos como 'Headline:' ou 'CTA:'.\n\n"
+        "Estrutura obrigatoria:\n"
+        "1) Uma headline de impacto (uma unica linha).\n"
+        "2) Um paragrafo curto destacando dor/solucao.\n"
+        "3) Uma lista com exatamente 3 bullet points com especificacoes tecnicas ficticias, "
+        "mas plausiveis para o produto.\n"
+        "4) Um call to action final sutil (uma unica linha).\n\n"
+        f"Produto: {product_name}"
+    )
+
     try:
         api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
         if not api_key:
-            return ""
+            return fallback
+
         client = openai.OpenAI(api_key=api_key)
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
+            max_tokens=400,
+            temperature=0.7,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
         )
-        return response.choices[0].message.content.strip()
+
+        content = response.choices[0].message.content
+        return content.strip() if content else fallback
     except Exception:
-        return ""
+        return fallback
