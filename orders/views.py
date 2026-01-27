@@ -136,19 +136,22 @@ def stripe_webhook_view(request):
                 order = Order.objects.get(id=order_id)
                 order.status = 'paid' 
                 order.save()
+                # Envio de email de confirmação
                 try:
                     send_mail(
-                        "Pagamento confirmado - Loja IA",
-                        (
-                            "Seu pagamento foi confirmado e seu pedido sera "
-                            "processado em breve. Obrigado pela compra!"
+                        subject=f"Pedido #{order.id} Confirmado! 🚀",
+                        message=(
+                            f"Olá {order.full_name}, seu pagamento de R$ "
+                            f"{order.total_amount} foi confirmado. Seus produtos "
+                            "já estão liberados!"
                         ),
-                        settings.DEFAULT_FROM_EMAIL,
-                        [order.email],
+                        from_email="noreply@loja-ia.com",
+                        recipient_list=[order.email],
                         fail_silently=True,
                     )
-                except Exception:
-                    pass
+                    print(f"📧 Email enviado para {order.email}")
+                except Exception as e:
+                    print(f" Erro ao enviar email: {e}")
                 print(f"PEDIDO {order_id} ATUALIZADO PARA PAGO!")
             except Order.DoesNotExist:
                 print(f"Pedido {order_id} não encontrado.")
