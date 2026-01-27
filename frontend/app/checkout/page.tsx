@@ -1,11 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-
 import { API_URL } from "@/lib/api";
-
 import { useCartStore } from "../../store/cartStore";
+import { useRouter } from "next/navigation";
 
 const parsePrice = (value: string) => {
   const cleaned = String(value).replace(/[^0-9.,-]/g, "");
@@ -18,9 +16,9 @@ const parsePrice = (value: string) => {
 };
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const { items, clearCart } = useCartStore();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -56,8 +54,10 @@ export default function CheckoutPage() {
 
     setError("");
     setIsProcessing(true);
+    setIsRedirecting(false);
 
     try {
+      // 1. Criar o pedido no Backend (Django)
       const payload = {
         full_name: trimmedName,
         email: trimmedEmail,
@@ -68,7 +68,7 @@ export default function CheckoutPage() {
         })),
       };
 
-      const response = await fetch(`${API_URL}/api/orders/`, {
+      const orderResponse = await fetch(`${API_URL}/api/orders/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,16 +76,50 @@ export default function CheckoutPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
+      if (orderResponse.status !== 201) {
         throw new Error("Falha ao finalizar o pedido.");
       }
 
+      const orderData = await orderResponse.json();
+      const orderId = orderData?.id;
+
+      if (!orderId) {
+        throw new Error("Pedido criado sem identificador.");
+      }
+
+      // 2. Criar a sessão de Checkout no Stripe
+      const checkoutResponse = await fetch(
+        `${API_URL}/api/orders/create-checkout-session/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ order_id: orderId }),
+        },
+      );
+
+      if (!checkoutResponse.ok) {
+        throw new Error("Falha ao iniciar o pagamento no Stripe.");
+      }
+
+      const checkoutData = await checkoutResponse.json();
+      const checkoutUrl = checkoutData?.url;
+
+      if (!checkoutUrl) {
+        throw new Error("Resposta do Stripe sem URL de checkout.");
+      }
+
+      // 3. Limpar carrinho e Redirecionar
       clearCart();
-      router.push("/checkout/success");
+      setIsRedirecting(true);
+      window.location.href = checkoutUrl;
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
-    } finally {
+      console.error(err);
       setIsProcessing(false);
+      setIsRedirecting(false);
+      setError(err instanceof Error ? err.message : "Erro inesperado.");
     }
   };
 
@@ -98,7 +132,7 @@ export default function CheckoutPage() {
             Complete the form to finish your purchase.
           </p>
 
-          <form className="mt-8 space-y-5">
+          <form className="mt-8 space-y-5" onSubmit={(e) => e.preventDefault()}>
             <div>
               <label className="text-xs uppercase tracking-[0.25em] text-zinc-500">
                 Name
@@ -191,7 +225,11 @@ export default function CheckoutPage() {
             disabled={isProcessing || items.length === 0}
             className="mt-6 w-full rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_-18px_rgba(236,72,153,0.9)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isProcessing ? "Processing..." : "Pagar Agora"}
+            {isRedirecting
+              ? "Redirecionando para Stripe..."
+              : isProcessing
+                ? "Processando..."
+                : "Pagar Agora"}
           </button>
           {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
         </div>

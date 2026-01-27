@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'cloudinary',
     'corsheaders',
     'rest_framework',
+    'drf_spectacular',
     'rest_framework_simplejwt',
     'core',
     'catalog',
@@ -99,6 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'core.User'
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
@@ -109,7 +111,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# --- CONFIGURAÇÃO DE ARQUIVOS (ESTÁTICOS E MÍDIA) ---
+# --- CONFIGURACAO DE ARQUIVOS (ESTATICOS E MIDIA) ---
 # Static (Admin/CSS/JS) - WhiteNoise
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -129,7 +131,7 @@ MEDIA_URL = "/media/"
 
 WHITENOISE_USE_FINDERS = True
 
-# Diagnóstico (remova depois que funcionar)
+# Diagnostico (remova depois que funcionar)
 print("CLOUDINARY ENV OK?",
       bool(os.environ.get("CLOUDINARY_CLOUD_NAME")),
       bool(os.environ.get("CLOUDINARY_API_KEY")),
@@ -139,4 +141,17 @@ if not DEBUG and not all(CLOUDINARY_STORAGE.values()):
     raise RuntimeError("Cloudinary env vars faltando no Render.")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")]
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Loja.IA API",
+    "DESCRIPTION": "API de E-commerce Cyberpunk com Inteligencia Artificial Generativa.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+import os
+print("--- DEBUG DO SISTEMA ---")
+print(f"Arquivo .env carregado? {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
+print("------------------------")
