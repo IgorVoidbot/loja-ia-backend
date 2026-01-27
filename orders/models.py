@@ -6,8 +6,13 @@ from catalog.models import Product
 
 class Order(models.Model):
     STATUS_PENDING = "pending"
+    STATUS_PAID = "paid"       
+    STATUS_FAILED = "failed"   
+
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
+        (STATUS_PAID, "Paid"),     
+        (STATUS_FAILED, "Failed"),
     ]
 
     full_name = models.CharField(max_length=255)
