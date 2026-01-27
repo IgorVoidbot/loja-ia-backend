@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -41,14 +42,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         # Se for usuário anônimo (visitante), retorna nada (segurança)
         if not user or user.is_anonymous:
             return Order.objects.none()
-            
-        if user.is_staff:
-            return Order.objects.all()
         return Order.objects.filter(user=user)
 
     def perform_create(self, serializer):
-        # Salva o pedido sem atrelar a usuário (compra como visitante)
-        serializer.save()
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save()
 
     # --- Ação de Checkout do Stripe ---
     @action(detail=False, methods=['post'], url_path='create-checkout-session')
@@ -136,6 +136,19 @@ def stripe_webhook_view(request):
                 order = Order.objects.get(id=order_id)
                 order.status = 'paid' 
                 order.save()
+                try:
+                    send_mail(
+                        "Pagamento confirmado - Loja IA",
+                        (
+                            "Seu pagamento foi confirmado e seu pedido sera "
+                            "processado em breve. Obrigado pela compra!"
+                        ),
+                        settings.DEFAULT_FROM_EMAIL,
+                        [order.email],
+                        fail_silently=True,
+                    )
+                except Exception:
+                    pass
                 print(f"PEDIDO {order_id} ATUALIZADO PARA PAGO!")
             except Order.DoesNotExist:
                 print(f"Pedido {order_id} não encontrado.")

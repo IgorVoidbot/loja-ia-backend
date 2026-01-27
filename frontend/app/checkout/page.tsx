@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { useCartStore } from "../../store/cartStore";
-import { useRouter } from "next/navigation";
+import { useAuthStore } from "../../store/authStore";
 
 const parsePrice = (value: string) => {
   const cleaned = String(value).replace(/[^0-9.,-]/g, "");
@@ -17,6 +17,7 @@ const parsePrice = (value: string) => {
 
 export default function CheckoutPage() {
   const { items, clearCart } = useCartStore();
+  const { token } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -72,6 +73,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
       });

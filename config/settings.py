@@ -156,3 +156,5 @@ import os
 print("--- DEBUG DO SISTEMA ---")
 print(f"Arquivo .env carregado? {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
 print("------------------------")
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'no-reply@lojaia.com'
