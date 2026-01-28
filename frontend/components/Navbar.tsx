@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Home, Search, ShoppingBag, User, X } from "lucide-react";
@@ -14,11 +14,11 @@ export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   return (
     <header className="fixed top-0 left-0 right-0 h-20 z-[100] border-b border-white/10 bg-zinc-950/90 text-white backdrop-blur-md transition-all duration-300">

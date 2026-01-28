@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -68,12 +69,14 @@ export default function ProductDetailsPage() {
   return (
     <main className="min-h-screen bg-black text-white">
       <section className="mx-auto grid max-w-6xl gap-10 px-6 pb-20 pt-12 md:grid-cols-2">
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900">
+        <div className="relative min-h-[360px] overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 md:min-h-[520px]">
           {product?.image ? (
-            <img
+            <Image
               src={product.image}
               alt={product.name}
-              className="h-full min-h-[360px] w-full object-cover md:min-h-[520px]"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
             />
           ) : (
             <div className="flex h-full min-h-[360px] w-full items-center justify-center text-sm text-zinc-400 md:min-h-[520px]">

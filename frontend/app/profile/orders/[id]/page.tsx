@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
@@ -167,9 +168,11 @@ export default function OrderDetailsPage() {
                   >
                     <div className="h-16 w-16 overflow-hidden rounded-xl bg-zinc-900">
                       {item.product_image ? (
-                        <img
+                        <Image
                           src={item.product_image}
                           alt={item.product_name}
+                          width={64}
+                          height={64}
                           className="h-full w-full object-cover"
                         />
                       ) : (

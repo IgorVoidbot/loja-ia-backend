@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 import { useCartStore } from "../store/cartStore";
@@ -58,9 +59,11 @@ export default function CartSidebar() {
               >
                 <div className="h-16 w-16 overflow-hidden rounded-xl bg-zinc-800">
                   {item.product.image ? (
-                    <img
+                    <Image
                       src={item.product.image}
                       alt={item.product.name}
+                      width={64}
+                      height={64}
                       className="h-full w-full object-cover"
                     />
                   ) : (

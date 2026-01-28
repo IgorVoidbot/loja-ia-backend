@@ -241,7 +241,7 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="bg-black text-white">
       <Suspense
         fallback={
           <div className="flex h-screen items-center justify-center text-zinc-500">

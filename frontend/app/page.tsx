@@ -14,10 +14,17 @@ export const dynamic = "force-dynamic";
 interface Product {
   id: number;
   name: string;
-  price: string;
-  image: string | null;
-  category_name: string;
   slug: string;
+  description: string | null;
+  price: string;
+  image: string;
+  created_at: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+    created_at: string;
+  };
 }
 
 interface Category {
@@ -75,21 +82,25 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
       <Navbar />
-      <div className="pt-20">
-        <Hero />
+      <div className="pt-16 sm:pt-20">
+        <Hero secondaryCtaLabel="Ver destaques" secondaryCtaHref="#highlights" />
       </div>
 
-      <section className="mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-16 pt-12">
-        <div>
+      <section className="mx-auto flex max-w-6xl flex-col gap-16 px-6 pb-20 pt-12 sm:gap-20 sm:pb-24">
+        <div id="highlights" className="scroll-mt-24">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-semibold tracking-tight">
               Destaques da Semana
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {products.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+            {products.slice(0, 4).map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                imagePriority={index === 0}
+              />
             ))}
           </div>
         </div>
@@ -114,28 +125,37 @@ export default async function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {categories.slice(0, 3).map((category) => (
-              <Link
-                key={category.id}
-                href={`/search?category=${category.slug}`}
-                className="group rounded-3xl border border-zinc-800 bg-zinc-950/60 p-8 transition hover:border-white/40"
-              >
-                <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">
-                  Categoria
-                </p>
-                <h3 className="mt-3 text-2xl font-semibold text-white">
-                  {category.name}
-                </h3>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Descubra pecas premium e exclusivas.
-                </p>
-                <span className="mt-6 inline-flex text-sm font-semibold text-white/80 transition group-hover:text-white">
-                  {"Explorar ->"}
-                </span>
+          {categories.length === 0 ? (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 px-5 py-4 text-sm text-zinc-400">
+              <span>Nenhuma categoria disponivel no momento.</span>{" "}
+              <Link href="/search" className="font-semibold text-white">
+                Ver colecao
               </Link>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {categories.slice(0, 3).map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/search?category=${category.slug}`}
+                  className="group rounded-3xl border border-zinc-800 bg-zinc-950/60 p-8 transition hover:border-white/40"
+                >
+                  <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">
+                    Categoria
+                  </p>
+                  <h3 className="mt-3 text-2xl font-semibold text-white">
+                    {category.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    Descubra pecas premium e exclusivas.
+                  </p>
+                  <span className="mt-6 inline-flex text-sm font-semibold text-white/80 transition group-hover:text-white">
+                    {"Explorar ->"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </main>

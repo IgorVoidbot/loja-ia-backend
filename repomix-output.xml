@@ -129,53 +129,6 @@ stripe.exe
 <files>
 This section contains the contents of the repository's files.
 
-<file path="orders/email_resend.py">
-import os
-from typing import Optional
-
-import requests
-
-
-def send_order_confirmation_email(order, idempotency_key: Optional[str] = None) -> Optional[str]:
-    url = "https://api.resend.com/emails"
-    headers = {
-        "Authorization": f"Bearer {os.environ.get('RESEND_API_KEY')}",
-        "Content-Type": "application/json",
-    }
-    if idempotency_key:
-        headers["Idempotency-Key"] = idempotency_key
-
-    from_email = os.environ.get("RESEND_FROM") or "Loja IA <onboarding@resend.dev>"
-    subject = f"Pedido #{order.id} Confirmado! 🚀"
-    html = (
-        f"<p>Olá {order.full_name},</p>"
-        "<p>Pagamento confirmado! Seu pedido foi recebido com sucesso.</p>"
-        f"<p>Total: R$ {order.total_amount}</p>"
-        "<p>Obrigado por comprar com a Loja IA.</p>"
-    )
-    text = (
-        f"Olá {order.full_name},\n\n"
-        "Pagamento confirmado! Seu pedido foi recebido com sucesso.\n"
-        f"Total: R$ {order.total_amount}\n\n"
-        "Obrigado por comprar com a Loja IA."
-    )
-
-    payload = {
-        "from": from_email,
-        "to": order.email,
-        "subject": subject,
-        "html": html,
-        "text": text,
-    }
-
-    response = requests.post(url, json=payload, headers=headers, timeout=10)
-    if not (200 <= response.status_code < 300):
-        raise Exception(response.text)
-
-    data = response.json()
-    return data.get("id")
-</file>
-
 <file path=".gitignore">
 __pycache__/
 *.py[cod]
@@ -1761,6 +1714,53 @@ class OrdersConfig(AppConfig):
     name = 'orders'
 </file>
 
+<file path="orders/email_resend.py">
+import os
+from typing import Optional
+
+import requests
+
+
+def send_order_confirmation_email(order, idempotency_key: Optional[str] = None) -> Optional[str]:
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {os.environ.get('RESEND_API_KEY')}",
+        "Content-Type": "application/json",
+    }
+    if idempotency_key:
+        headers["Idempotency-Key"] = idempotency_key
+
+    from_email = os.environ.get("RESEND_FROM") or "Loja IA <onboarding@resend.dev>"
+    subject = f"Pedido #{order.id} Confirmado! 🚀"
+    html = (
+        f"<p>Olá {order.full_name},</p>"
+        "<p>Pagamento confirmado! Seu pedido foi recebido com sucesso.</p>"
+        f"<p>Total: R$ {order.total_amount}</p>"
+        "<p>Obrigado por comprar com a Loja IA.</p>"
+    )
+    text = (
+        f"Olá {order.full_name},\n\n"
+        "Pagamento confirmado! Seu pedido foi recebido com sucesso.\n"
+        f"Total: R$ {order.total_amount}\n\n"
+        "Obrigado por comprar com a Loja IA."
+    )
+
+    payload = {
+        "from": from_email,
+        "to": order.email,
+        "subject": subject,
+        "html": html,
+        "text": text,
+    }
+
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
+    if not (200 <= response.status_code < 300):
+        raise Exception(response.text)
+
+    data = response.json()
+    return data.get("id")
+</file>
+
 <file path="orders/migrations/__init__.py">
 
 </file>
@@ -2973,21 +2973,6 @@ if __name__ == '__main__':
     main()
 </file>
 
-<file path="orders/urls.py">
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from orders.views import OrderViewSet, stripe_webhook_view, test_resend_view
-
-router = DefaultRouter()
-router.register(r'orders', OrderViewSet, basename='orders')
-
-urlpatterns = [
-    path('', include(router.urls)),
-    path('webhook/', stripe_webhook_view, name='stripe-webhook'),
-    path('test-resend/', test_resend_view, name='test-resend'),
-]
-</file>
-
 <file path="frontend/app/search/page.tsx">
 "use client";
 
@@ -3289,6 +3274,21 @@ class OrderItem(models.Model):
         return f"{self.product.name} x {self.quantity}"
 
 # Create your models here.
+</file>
+
+<file path="orders/urls.py">
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from orders.views import OrderViewSet, stripe_webhook_view, test_resend_view
+
+router = DefaultRouter()
+router.register(r'orders', OrderViewSet, basename='orders')
+
+urlpatterns = [
+    path('', include(router.urls)),
+    path('webhook/', stripe_webhook_view, name='stripe-webhook'),
+    path('test-resend/', test_resend_view, name='test-resend'),
+]
 </file>
 
 <file path="requirements.txt">
@@ -4044,6 +4044,7 @@ from orders.serializers import OrderSerializer
 from orders.email_resend import send_order_confirmation_email
 
 import os
+import re
 from types import SimpleNamespace
 
 from django.http import HttpResponse, JsonResponse
@@ -4199,10 +4200,15 @@ def test_resend_view(request):
     if not expected_token or admin_token != expected_token:
         return JsonResponse({"ok": False, "error": "Unauthorized."}, status=403)
 
-    to_email = request.GET.get("to") or settings.RESEND_FROM
+    to_email = request.GET.get("to")
+    if not to_email:
+        match = re.search(r"<([^>]+)>", settings.RESEND_FROM or "")
+        if match:
+            to_email = match.group(1).strip()
     if not to_email:
         return JsonResponse(
-            {"ok": False, "error": "Destino nao configurado."}, status=400
+            {"ok": False, "error": "Passe ?to= com o email de destino."},
+            status=400,
         )
 
     order = SimpleNamespace(
