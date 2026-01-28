@@ -108,6 +108,7 @@ media/products/CamisaCorinthians.png
 orders/__init__.py
 orders/admin.py
 orders/apps.py
+orders/email_resend.py
 orders/migrations/__init__.py
 orders/migrations/0001_initial.py
 orders/migrations/0002_order_user.py
@@ -127,6 +128,53 @@ stripe.exe
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="orders/email_resend.py">
+import os
+from typing import Optional
+
+import requests
+
+
+def send_order_confirmation_email(order, idempotency_key: Optional[str] = None) -> Optional[str]:
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {os.environ.get('RESEND_API_KEY')}",
+        "Content-Type": "application/json",
+    }
+    if idempotency_key:
+        headers["Idempotency-Key"] = idempotency_key
+
+    from_email = os.environ.get("RESEND_FROM") or "Loja IA <onboarding@resend.dev>"
+    subject = f"Pedido #{order.id} Confirmado! 🚀"
+    html = (
+        f"<p>Olá {order.full_name},</p>"
+        "<p>Pagamento confirmado! Seu pedido foi recebido com sucesso.</p>"
+        f"<p>Total: R$ {order.total_amount}</p>"
+        "<p>Obrigado por comprar com a Loja IA.</p>"
+    )
+    text = (
+        f"Olá {order.full_name},\n\n"
+        "Pagamento confirmado! Seu pedido foi recebido com sucesso.\n"
+        f"Total: R$ {order.total_amount}\n\n"
+        "Obrigado por comprar com a Loja IA."
+    )
+
+    payload = {
+        "from": from_email,
+        "to": order.email,
+        "subject": subject,
+        "html": html,
+        "text": text,
+    }
+
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
+    if not (200 <= response.status_code < 300):
+        raise Exception(response.text)
+
+    data = response.json()
+    return data.get("id")
+</file>
 
 <file path=".gitignore">
 __pycache__/
@@ -2928,7 +2976,7 @@ if __name__ == '__main__':
 <file path="orders/urls.py">
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from orders.views import OrderViewSet, stripe_webhook_view # Importe a nova view
+from orders.views import OrderViewSet, stripe_webhook_view, test_resend_view
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='orders')
@@ -2936,6 +2984,7 @@ router.register(r'orders', OrderViewSet, basename='orders')
 urlpatterns = [
     path('', include(router.urls)),
     path('webhook/', stripe_webhook_view, name='stripe-webhook'),
+    path('test-resend/', test_resend_view, name='test-resend'),
 ]
 </file>
 
@@ -3984,7 +4033,6 @@ export default nextConfig;
 
 <file path="orders/views.py">
 from django.conf import settings
-from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -3993,38 +4041,41 @@ import stripe
 
 from orders.models import Order
 from orders.serializers import OrderSerializer
+from orders.email_resend import send_order_confirmation_email
 
-from django.http import HttpResponse
+import os
+from types import SimpleNamespace
+
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import stripe
 
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.prefetch_related("items").all()
     serializer_class = OrderSerializer
 
-    # --- CORREÇÃO AQUI: getattr para evitar erro 500 ---
+    # --- CORRE��O AQUI: getattr para evitar erro 500 ---
     def get_authenticators(self):
-        # Tenta pegar a ação de forma segura. Se não existir, retorna None.
-        action = getattr(self, 'action', None)
-        
-        # Se for criar pedido ou checkout, retorna lista vazia (sem autenticação)
+        # Tenta pegar a a��o de forma segura. Se n�o existir, retorna None.
+        action = getattr(self, "action", None)
+
+        # Se for criar pedido ou checkout, retorna lista vazia (sem autentica��o)
         if action in ["create", "create_checkout_session"]:
             return []
-        
+
         return super().get_authenticators()
 
     def get_permissions(self):
-        # Se for POST (qualquer criação), libera geral
+        # Se for POST (qualquer cria��o), libera geral
         if self.request.method == "POST":
             return [permissions.AllowAny()]
-        
+
         # Para ver a lista (GET), precisa estar logado
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         user = self.request.user
-        # Se for usuário anônimo (visitante), retorna nada (segurança)
+        # Se for usu�rio an�nimo (visitante), retorna nada (seguran�a)
         if not user or user.is_anonymous:
             return Order.objects.none()
         return Order.objects.filter(user=user)
@@ -4035,11 +4086,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-    # --- Ação de Checkout do Stripe ---
-    @action(detail=False, methods=['post'], url_path='create-checkout-session')
+    # --- A��o de Checkout do Stripe ---
+    @action(detail=False, methods=["post"], url_path="create-checkout-session")
     def create_checkout_session(self, request):
-        print("--- Iniciando Checkout Session ---") # Debug
-        
+        print("--- Iniciando Checkout Session ---")  # Debug
+
         order_id = request.data.get("order_id")
         if not order_id:
             return Response(
@@ -4052,14 +4103,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         try:
             order = Order.objects.get(id=order_id)
         except Order.DoesNotExist:
-             return Response(
+            return Response(
                 {"detail": "Order not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         line_items = []
         for item in order.items.all():
-            # Converter preço para centavos (inteiro)
+            # Converter pre�o para centavos (inteiro)
             unit_amount = int(item.price * 100)
             line_items.append(
                 {
@@ -4076,7 +4127,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             f"{settings.FRONTEND_URL}"
             "/checkout/success?session_id={CHECKOUT_SESSION_ID}"
         )
-        
+
         cancel_url = f"{settings.FRONTEND_URL}/checkout"
 
         try:
@@ -4094,12 +4145,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
 
         return Response({"url": session.url}, status=status.HTTP_200_OK)
-    
 
-@csrf_exempt 
+
+@csrf_exempt
 def stripe_webhook_view(request):
     payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
     event = None
 
     try:
@@ -4107,41 +4158,68 @@ def stripe_webhook_view(request):
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
     except ValueError as e:
-        return HttpResponse(status=400)
+        print(f"[STRIPE][WEBHOOK] payload inválido: {e}")
+        event = None
     except stripe.error.SignatureVerificationError as e:
-        return HttpResponse(status=400)
+        print(f"[STRIPE][WEBHOOK] assinatura inválida: {e}")
+        event = None
 
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        
-        order_id = session.get('metadata', {}).get('order_id')
+    if event and event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+
+        order_id = session.get("metadata", {}).get("order_id")
 
         if order_id:
             try:
                 order = Order.objects.get(id=order_id)
-                order.status = 'paid' 
+                order.status = "paid"
                 order.save()
-                # Envio de email de confirmação
                 try:
-                    send_mail(
-                        subject=f"Pedido #{order.id} Confirmado! 🚀",
-                        message=(
-                            f"Olá {order.full_name}, seu pagamento de R$ "
-                            f"{order.total_amount} foi confirmado. Seus produtos "
-                            "já estão liberados!"
-                        ),
-                        from_email="noreply@loja-ia.com",
-                        recipient_list=[order.email],
-                        fail_silently=True,
+                    email_id = send_order_confirmation_email(
+                        order, idempotency_key=f"order-{order.id}"
                     )
-                    print(f"📧 Email enviado para {order.email}")
+                    print(
+                        f"[EMAIL][RESEND] enviado id={email_id} to={order.email} order_id={order.id}"
+                    )
                 except Exception as e:
-                    print(f" Erro ao enviar email: {e}")
+                    print(f"[EMAIL][RESEND] erro {e} order_id={order.id}")
                 print(f"PEDIDO {order_id} ATUALIZADO PARA PAGO!")
             except Order.DoesNotExist:
-                print(f"Pedido {order_id} não encontrado.")
+                print(f"Pedido {order_id} n�o encontrado.")
 
     return HttpResponse(status=200)
+
+
+def test_resend_view(request):
+    if request.method != "GET":
+        return JsonResponse({"ok": False, "error": "Metodo nao permitido."}, status=405)
+
+    admin_token = request.headers.get("X-ADMIN-TOKEN")
+    expected_token = os.environ.get("ADMIN_TEST_TOKEN")
+    if not expected_token or admin_token != expected_token:
+        return JsonResponse({"ok": False, "error": "Unauthorized."}, status=403)
+
+    to_email = request.GET.get("to") or settings.RESEND_FROM
+    if not to_email:
+        return JsonResponse(
+            {"ok": False, "error": "Destino nao configurado."}, status=400
+        )
+
+    order = SimpleNamespace(
+        id="teste",
+        email=to_email,
+        full_name="Cliente Teste",
+        total_amount="0.00",
+    )
+
+    try:
+        email_id = send_order_confirmation_email(
+            order, idempotency_key=f"test-resend-{to_email}"
+        )
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=200)
+
+    return JsonResponse({"ok": True, "email_id": email_id}, status=200)
 </file>
 
 <file path="config/settings.py">
@@ -4290,6 +4368,8 @@ if not DEBUG and not all(CLOUDINARY_STORAGE.values()):
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+RESEND_FROM = os.environ.get("RESEND_FROM")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")]
 SPECTACULAR_SETTINGS = {
@@ -4305,11 +4385,19 @@ print(f"Arquivo .env carregado? {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
 print("------------------------")
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('1','true','yes','on')
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = 'no-reply@lojaia.com'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER
+
+if not DEBUG and (not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
+    raise RuntimeError(
+        "EMAIL_HOST_USER e EMAIL_HOST_PASSWORD devem estar definidos em producao."
+    )
+
+if not DEBUG and not RESEND_API_KEY:
+    raise RuntimeError("RESEND_API_KEY não configurada no ambiente (Render).")
 </file>
 
 </files>

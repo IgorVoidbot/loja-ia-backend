@@ -143,6 +143,8 @@ if not DEBUG and not all(CLOUDINARY_STORAGE.values()):
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+RESEND_FROM = os.environ.get("RESEND_FROM")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")]
 SPECTACULAR_SETTINGS = {
@@ -168,3 +170,6 @@ if not DEBUG and (not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
     raise RuntimeError(
         "EMAIL_HOST_USER e EMAIL_HOST_PASSWORD devem estar definidos em producao."
     )
+
+if not DEBUG and not RESEND_API_KEY:
+    raise RuntimeError("RESEND_API_KEY não configurada no ambiente (Render).")

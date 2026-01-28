@@ -1,5 +1,4 @@
 ﻿from django.conf import settings
-from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -8,10 +7,13 @@ import stripe
 
 from orders.models import Order
 from orders.serializers import OrderSerializer
+from orders.email_resend import send_order_confirmation_email
 
-from django.http import HttpResponse
+import os
+from types import SimpleNamespace
+
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import stripe
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -122,11 +124,13 @@ def stripe_webhook_view(request):
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
     except ValueError as e:
-        return HttpResponse(status=400)
+        print(f"[STRIPE][WEBHOOK] payload inválido: {e}")
+        event = None
     except stripe.error.SignatureVerificationError as e:
-        return HttpResponse(status=400)
+        print(f"[STRIPE][WEBHOOK] assinatura inválida: {e}")
+        event = None
 
-    if event["type"] == "checkout.session.completed":
+    if event and event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
 
         order_id = session.get("metadata", {}).get("order_id")
@@ -136,26 +140,49 @@ def stripe_webhook_view(request):
                 order = Order.objects.get(id=order_id)
                 order.status = "paid"
                 order.save()
-                # Envio de email de confirma��o
                 try:
-
-                    sent = send_mail(
-                        subject=f"Pedido #{order.id} Confirmado! ??",
-                        message=(
-                            f"Ol� {order.full_name}, seu pagamento de R$ "
-                            f"{order.total_amount} foi confirmado. Seus produtos "
-                            "j� est�o liberados!"
-                        ),
-                        from_email=settings.DEFAULT_FROM_EMAIL,  # <- importante
-                        recipient_list=[order.email],
-                        fail_silently=False,  # <- importante
+                    email_id = send_order_confirmation_email(
+                        order, idempotency_key=f"order-{order.id}"
                     )
-
-                    print(f"[EMAIL] send_mail retornou={sent} to={order.email} order_id={order.id}")
+                    print(
+                        f"[EMAIL][RESEND] enviado id={email_id} to={order.email} order_id={order.id}"
+                    )
                 except Exception as e:
-                    print(f" Erro ao enviar email: {e}")
+                    print(f"[EMAIL][RESEND] erro {e} order_id={order.id}")
                 print(f"PEDIDO {order_id} ATUALIZADO PARA PAGO!")
             except Order.DoesNotExist:
                 print(f"Pedido {order_id} n�o encontrado.")
 
     return HttpResponse(status=200)
+
+
+def test_resend_view(request):
+    if request.method != "GET":
+        return JsonResponse({"ok": False, "error": "Metodo nao permitido."}, status=405)
+
+    admin_token = request.headers.get("X-ADMIN-TOKEN")
+    expected_token = os.environ.get("ADMIN_TEST_TOKEN")
+    if not expected_token or admin_token != expected_token:
+        return JsonResponse({"ok": False, "error": "Unauthorized."}, status=403)
+
+    to_email = request.GET.get("to") or settings.RESEND_FROM
+    if not to_email:
+        return JsonResponse(
+            {"ok": False, "error": "Destino nao configurado."}, status=400
+        )
+
+    order = SimpleNamespace(
+        id="teste",
+        email=to_email,
+        full_name="Cliente Teste",
+        total_amount="0.00",
+    )
+
+    try:
+        email_id = send_order_confirmation_email(
+            order, idempotency_key=f"test-resend-{to_email}"
+        )
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=200)
+
+    return JsonResponse({"ok": True, "email_id": email_id}, status=200)
