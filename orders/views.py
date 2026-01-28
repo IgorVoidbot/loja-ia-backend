@@ -10,6 +10,7 @@ from orders.serializers import OrderSerializer
 from orders.email_resend import send_order_confirmation_email
 
 import os
+import re
 from types import SimpleNamespace
 
 from django.http import HttpResponse, JsonResponse
@@ -165,10 +166,15 @@ def test_resend_view(request):
     if not expected_token or admin_token != expected_token:
         return JsonResponse({"ok": False, "error": "Unauthorized."}, status=403)
 
-    to_email = request.GET.get("to") or settings.RESEND_FROM
+    to_email = request.GET.get("to")
+    if not to_email:
+        match = re.search(r"<([^>]+)>", settings.RESEND_FROM or "")
+        if match:
+            to_email = match.group(1).strip()
     if not to_email:
         return JsonResponse(
-            {"ok": False, "error": "Destino nao configurado."}, status=400
+            {"ok": False, "error": "Passe ?to= com o email de destino."},
+            status=400,
         )
 
     order = SimpleNamespace(
